@@ -57,12 +57,11 @@ Aquí no pasa por ningún lado:
 
 ### 2. El servicio
 
-1. Sube este repo a GitHub:
+1. Sube este repo a GitHub. El remoto ya está puesto
+   (`diegociborro99-bot/ciborro`), así que basta con crearlo y empujar:
 
    ```bash
-   gh repo create escritorio --private --source=. --push
-   # o, a mano:
-   git remote add origin git@github.com:<tu-usuario>/escritorio.git
+   gh repo create diegociborro99-bot/ciborro --private   # si no existe todavía
    git push -u origin main
    ```
 2. Railway → **New Project** → **Deploy from GitHub repo** → elige el repo.
