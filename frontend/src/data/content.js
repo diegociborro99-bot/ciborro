@@ -8,7 +8,10 @@
 
 export const owner = {
   name: 'Diego Ciborro',
-  handle: 'diego',
+  // El nombre corto del sitio, para la barra de arriba — donde antes salía tu
+  // nombre de pila. La pestaña y las etiquetas de compartir dicen «degos
+  // space» y viven en index.html; tu nombre completo sigue en «Sobre mí».
+  siteName: 'Degos',
   role: 'Fotografía · Producto · Cosas mías',
   location: 'Asturias, España',
   email: 'diegociborro99@gmail.com',
@@ -19,9 +22,9 @@ export const owner = {
     'La mayor parte de lo que ves aquí lo disparé en calle y en viaje, con luz que no controlaba. Me interesa más el momento raro que la composición perfecta.',
   ],
   links: [
-    { label: 'Instagram', href: 'https://instagram.com/' },
+    { label: 'Instagram', href: 'https://instagram.com/diegociborro' },
     { label: 'GitHub', href: 'https://github.com/' },
-    { label: 'LinkedIn', href: 'https://linkedin.com/' },
+    { label: 'LinkedIn', href: 'https://www.linkedin.com/in/diego-ciborro-4812183a2/' },
     { label: 'Email', href: 'mailto:diegociborro99@gmail.com' },
   ],
 }

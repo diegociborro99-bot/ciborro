@@ -56,7 +56,7 @@ export default function MenuBar({ menus, theme, onToggleTheme, onSearch, nowPlay
     >
       {/* el único h1 de la página; el preflight de Tailwind ya iguala tamaño y peso */}
       <h1 className="serif mr-2 shrink-0 pr-1 text-[17px] leading-none sm:text-[18px]" style={{ color: 'var(--tx)' }}>
-        {owner.name.split(' ')[0]}
+        {owner.siteName ?? owner.name.split(' ')[0]}
         <span style={{ color: 'var(--accent)' }}>.</span>
       </h1>
 
