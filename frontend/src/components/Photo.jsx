@@ -27,6 +27,9 @@ export default function Photo({
   maxWidth,
 }) {
   const [loaded, setLoaded] = useState(false)
+  // si el archivo falla, al marcador generado: el JSDoc promete que el sitio
+  // nunca se ve roto, y hasta ahora eso sólo cubría el caso de no haber foto
+  const [failed, setFailed] = useState(false)
 
   const box = {
     background: 'var(--panel-2)',
@@ -73,6 +76,7 @@ export default function Photo({
             fetchPriority={priority ? 'high' : eager ? 'low' : 'auto'}
             decoding="async"
             onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
             className="h-full w-full object-cover"
             style={{
               opacity: loaded ? 1 : 0,
@@ -97,6 +101,7 @@ export default function Photo({
           decoding="async"
           sizes={sizes}
           onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
           className="h-full w-full object-cover"
           style={{ opacity: loaded ? 1 : 0, transition: 'opacity .45s var(--ease)' }}
         />
@@ -111,6 +116,11 @@ export default function Photo({
 
 function Procedural({ photo, className = '', style }) {
   const gen = useMemo(() => build(photo), [photo])
+  /* Los pares de color viven en content.js y están elegidos para fondo oscuro:
+     tal cual, en tema claro son agujeros casi negros sobre papel. Mezclados
+     con el panel por --mark-mix quedan igual en oscuro y en tierras medias en
+     claro. Va en CSS, así que cambiar de tema los repinta sin remontar nada. */
+  const tint = (c) => `color-mix(in oklab, ${c} var(--mark-mix), var(--panel-2))`
   return (
     <div className={`relative overflow-hidden ${className}`} style={style}>
       <svg
@@ -122,8 +132,8 @@ function Procedural({ photo, className = '', style }) {
       >
         <defs>
           <linearGradient id={`g-${photo.id}`} x1="0" y1="0" x2="0.7" y2="1">
-            <stop offset="0%" stopColor={gen.a} />
-            <stop offset="100%" stopColor={gen.b} />
+            <stop offset="0%" style={{ stopColor: tint(gen.a) }} />
+            <stop offset="100%" style={{ stopColor: tint(gen.b) }} />
           </linearGradient>
           <filter id={`n-${photo.id}`}>
             <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed={gen.seed} />
@@ -133,9 +143,9 @@ function Procedural({ photo, className = '', style }) {
         <rect width="100" height="100" fill={`url(#g-${photo.id})`} />
         {gen.shapes.map((s, i) =>
           s.k === 'c' ? (
-            <circle key={i} cx={s.x} cy={s.y} r={s.r} fill={gen.b} opacity={s.o} />
+            <circle key={i} cx={s.x} cy={s.y} r={s.r} style={{ fill: tint(gen.b) }} opacity={s.o} />
           ) : (
-            <rect key={i} x={s.x} y={s.y} width={s.w} height={s.h} fill={gen.a} opacity={s.o} />
+            <rect key={i} x={s.x} y={s.y} width={s.w} height={s.h} style={{ fill: tint(gen.a) }} opacity={s.o} />
           )
         )}
         <rect

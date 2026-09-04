@@ -1,7 +1,7 @@
 # Escritorio
 
-Un portfolio con forma de sistema operativo: arranque, fondo vivo, iconos en el
-escritorio, ventanas que se arrastran, anclan y redimensionan, dock con
+Un portfolio con forma de sistema operativo: arranque, fondo vivo, escritorio
+limpio, ventanas que se arrastran, anclan y redimensionan, dock con
 magnificación, buscador general, consola con árbol de archivos, galería con
 visor, reproductor, reloj mundial, un gato que persigue el cursor y un
 minijuego.
@@ -134,10 +134,9 @@ API, el sitio tira del contenido de `frontend/src/data/content.js`. Con
 ## Poner tu contenido
 
 Lo que **no** son fotos vive en **`frontend/src/data/content.js`**: nombre, bio,
-enlaces, proyectos, pistas del reproductor, relojes de la barra y qué documentos
-aparecen sueltos en el escritorio. Si hay base de datos, lo que esté en ella
-manda y este archivo queda de red de seguridad (y de contenido inicial, con
-`npm run db:seed`).
+enlaces, proyectos, pistas del reproductor y relojes de la barra. Si hay base de
+datos, lo que esté en ella manda y este archivo queda de red de seguridad (y de
+contenido inicial, con `npm run db:seed`).
 
 - **Saludo manuscrito**: `owner.greeting`. Están dibujadas las letras de "hola";
   con cualquier otra palabra se usa una rúbrica genérica. Para dibujar otra,
@@ -154,8 +153,8 @@ manda y este archivo queda de red de seguridad (y de contenido inicial, con
 
 **Escritorio** — arranque con la firma escribiéndose (una vez por sesión, se
 salta pulsando), fondo con manchas de color a la deriva y una luz que sigue al
-cursor, menú contextual con el botón derecho. Lo que hay suelto a la izquierda
-son **documentos**, no aplicaciones: las apps viven en el dock.
+cursor, menú contextual con el botón derecho. El escritorio arranca **vacío**:
+no hay iconos sueltos, todo se abre desde el dock.
 
 **Ventanas** — arrastrar por la barra de título; soltar en el borde izquierdo o
 derecho las ancla a media pantalla y arriba las maximiza, con guía previa;
@@ -186,9 +185,8 @@ Rondas con más gatos y muebles que estorban, y mejor tiempo guardado.
 **Enlaces** — la URL refleja lo que tienes delante: `#fotos/5` abre el visor en
 esa foto, `#consola` abre la consola.
 
-**En móvil** — el dock se encoge para caber entero y los iconos del escritorio se
-ocultan. Un toque en el fondo manda al gato hacia ese punto, y en el minijuego el
-toque funciona como una palmada.
+**En móvil** — el dock se encoge para caber entero. Un toque en el fondo manda al
+gato hacia ese punto, y en el minijuego el toque funciona como una palmada.
 
 **Atajos** — `⌘K` · `/` buscar — `F` vista general — `?` chuleta — `1`–`7` abrir
 u ocultar cada app — `⌘W` cerrar la de delante — `← →` moverse entre fotos —
@@ -214,7 +212,7 @@ frontend/src/
   components/
     Window.jsx            marco, barra de título, redimensionado 8 lados
     Photo.jsx             <picture> con AVIF/WebP/JPEG, srcset y desenfoque previo
-    MenuBar.jsx  Dock.jsx  DesktopIcons.jsx  ContextMenu.jsx
+    MenuBar.jsx  Dock.jsx  ContextMenu.jsx
     CommandPalette.jsx  Toasts.jsx  Shortcuts.jsx  Wallpaper.jsx  Boot.jsx
     WorldClock.jsx        reloj mundial (Intl, sin dependencias)
     Cat.jsx               oneko: mascota que persigue el cursor
@@ -267,6 +265,10 @@ fotogramas y la máquina de estados vienen de
 [oneko.js](https://github.com/adryd325/oneko.js) de adryd, bajo licencia MIT — el
 texto está en `frontend/src/assets/oneko-LICENSE.txt` y tiene que viajar con el
 código. A su vez es un port del *neko* japonés de 1989.
+
+El favicon (`frontend/public/favicon.svg`) sale de ese mismo sprite: es el
+fotograma sentado, con el interior relleno para que se lea a 16 px y el suelo
+en el ámbar del acento. Cae bajo la misma licencia MIT de oneko.
 
 ## Accesibilidad
 

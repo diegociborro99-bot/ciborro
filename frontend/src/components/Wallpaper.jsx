@@ -61,10 +61,9 @@ export default function Wallpaper() {
 
       {/* luz que sigue al cursor */}
       <div
-        className="absolute inset-0 transition-opacity duration-700"
+        className="absolute inset-0"
         style={{
-          background:
-            'radial-gradient(340px 340px at var(--mx) var(--my), color-mix(in srgb, var(--tx) 6%, transparent), transparent 70%)',
+          background: 'radial-gradient(340px 340px at var(--mx) var(--my), var(--glow), transparent 70%)',
         }}
       />
 
@@ -86,7 +85,7 @@ export default function Wallpaper() {
       {/* viñeta */}
       <div
         className="absolute inset-0"
-        style={{ background: 'radial-gradient(120% 100% at 50% 40%, transparent 52%, rgba(0,0,0,.28))' }}
+        style={{ background: 'radial-gradient(120% 100% at 50% 40%, transparent 52%, var(--vignette))' }}
       />
     </div>
   )

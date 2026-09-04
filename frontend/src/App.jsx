@@ -7,7 +7,6 @@ import Cat from './components/Cat'
 import Handwriting from './components/Handwriting'
 import Wallpaper from './components/Wallpaper'
 import Boot from './components/Boot'
-import DesktopIcons from './components/DesktopIcons'
 import ContextMenu from './components/ContextMenu'
 import CommandPalette from './components/CommandPalette'
 import Toasts, { useToasts } from './components/Toasts'
@@ -21,7 +20,7 @@ import HerdGame from './apps/HerdGame'
 import Notes from './apps/Notes'
 import Terminal from './apps/Terminal'
 
-import { useWindows, snapRect, DOCK_H } from './hooks/useWindows'
+import { useWindows, snapRect, DOCK_H, MENUBAR_H } from './hooks/useWindows'
 import { useContent } from './lib/content'
 import {
   IconGallery,
@@ -92,6 +91,10 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     localStorage.setItem('theme', theme)
+    // el cromo del navegador va con el tema elegido, no con el del sistema, y
+    // el color sale del token para no tener el mismo valor escrito en dos sitios
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()
   }, [theme])
 
   useEffect(() => {
@@ -99,6 +102,14 @@ export default function App() {
   }, [cat])
 
   const topWin = useMemo(() => wins.filter((w) => !w.minimized).sort((a, b) => b.z - a.z)[0], [wins])
+  // lienzo desnudo: nada abierto, ni siquiera minimizado en el dock
+  const bare = !topWin
+  /* Visor abierto: se lleva el teclado. Si no, pulsar 3 abría otra app por
+     detrás de la foto, y F repartía las ventanas que no se ven. */
+  const viewer = useMemo(
+    () => photoIndex !== null && wins.some((w) => w.id === 'gallery' && !w.minimized && !w.closing),
+    [photoIndex, wins]
+  )
 
   /* — abrir una foto desde cualquier sitio — */
   const openPhoto = useCallback(
@@ -153,6 +164,8 @@ export default function App() {
         return
       }
       if (typing || e.metaKey || e.ctrlKey || e.altKey) return
+      // el visor tiene sus propias teclas (flechas, zoom, I, espacio, Esc)
+      if (viewer) return
 
       if (e.key === 'Escape') {
         setExpose(false)
@@ -179,7 +192,7 @@ export default function App() {
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
-  }, [toggle, topWin, close])
+  }, [toggle, topWin, close, viewer])
 
   /* — menús de la barra superior — */
   const flipTheme = useCallback(() => {
@@ -388,19 +401,30 @@ export default function App() {
     >
       <Wallpaper />
 
-      {/* firma de fondo */}
-      <div className="pointer-events-none absolute inset-0 grid place-items-center px-6">
-        <div
-          className="text-center"
-          style={{ opacity: booting ? 0 : 0.13, transition: 'opacity 1.6s var(--ease) .3s' }}
-        >
-          <Handwriting text={owner.greeting} height={112} color="var(--tx)" strokeWidth={8} delay={0.6} />
+      {/* Firma de fondo. Con todo cerrado sube de tono y aparece debajo la única
+          línea que nombra al dock: sin iconos sueltos, el lienzo desnudo tiene
+          que decir de dónde salen las cosas. El desplazamiento centra el bloque
+          en la franja real entre la barra y el dock, no en la ventana. */}
+      <div
+        className="pointer-events-none absolute inset-0 grid place-items-center px-6"
+        style={{ paddingBottom: DOCK_H - MENUBAR_H }}
+      >
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div style={{ opacity: booting ? 0 : bare ? 0.4 : 0.13, transition: 'opacity .9s var(--ease) .2s' }}>
+            <Handwriting text={owner.greeting} height={112} color="var(--tx)" strokeWidth={8} delay={0.6} />
+          </div>
+          <p
+            className="label"
+            style={{
+              color: 'var(--tx-2)',
+              textShadow: '0 1px 3px var(--halo)',
+              opacity: booting || !bare ? 0 : 0.9,
+              transition: 'opacity .5s var(--ease)',
+            }}
+          >
+            todo se abre desde el dock
+          </p>
         </div>
-      </div>
-
-      {/* en pantallas estrechas las ventanas ocupan todo: los iconos sobran */}
-      <div className="hidden md:block">
-        <DesktopIcons onOpenApp={open} onOpenPhoto={openPhoto} />
       </div>
 
       <MenuBar
@@ -415,7 +439,7 @@ export default function App() {
       {/* guía de anclaje mientras se arrastra hacia un borde */}
       {hintRect && (
         <div
-          className="fade-in pointer-events-none fixed z-[6000] rounded-xl"
+          className="fade-in pointer-events-none fixed z-[6000] rounded-[var(--radius)]"
           style={{
             left: hintRect.x,
             top: hintRect.y,
@@ -423,6 +447,10 @@ export default function App() {
             height: hintRect.h,
             background: 'var(--accent-soft)',
             border: '1.5px solid var(--accent)',
+            // el nodo se reutiliza mientras se siga arrastrando por los bordes:
+            // sin esto, pasar de izquierda a arriba teletransporta la guía
+            transition:
+              'left .16s var(--ease), top .16s var(--ease), width .16s var(--ease), height .16s var(--ease)',
           }}
         />
       )}
@@ -494,7 +522,7 @@ export default function App() {
             onClick={() => setPalette(true)}
             title="Buscar  ⌘K"
             aria-label="Buscar"
-            className="grid h-9 w-9 place-items-center rounded-[13px] transition-colors duration-200 sm:h-10 sm:w-10"
+            className="grid h-8 w-8 place-items-center rounded-[13px] transition-colors duration-200 sm:h-10 sm:w-10"
             style={{ background: 'var(--panel-2)', border: '1px solid var(--line)', color: 'var(--tx-2)' }}
           >
             <IconSearch size={18} />

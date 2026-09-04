@@ -8,7 +8,10 @@
 
 export const owner = {
   name: 'Diego Ciborro',
-  handle: 'diego',
+  // El nombre corto del sitio, para la barra de arriba — donde antes salía tu
+  // nombre de pila. La pestaña y las etiquetas de compartir dicen «degos
+  // space» y viven en index.html; tu nombre completo sigue en «Sobre mí».
+  siteName: 'Degos',
   role: 'Fotografía · Producto · Cosas mías',
   location: 'Asturias, España',
   email: 'diegociborro99@gmail.com',
@@ -19,9 +22,8 @@ export const owner = {
     'La mayor parte de lo que ves aquí lo disparé en calle y en viaje, con luz que no controlaba. Me interesa más el momento raro que la composición perfecta.',
   ],
   links: [
-    { label: 'Instagram', href: 'https://instagram.com/' },
-    { label: 'GitHub', href: 'https://github.com/' },
-    { label: 'LinkedIn', href: 'https://linkedin.com/' },
+    { label: 'Instagram', href: 'https://instagram.com/diegociborro' },
+    { label: 'LinkedIn', href: 'https://www.linkedin.com/in/diego-ciborro-4812183a2/' },
     { label: 'Email', href: 'mailto:diegociborro99@gmail.com' },
   ],
 }
@@ -90,20 +92,9 @@ export const tracks = [
   { title: 'Vuelta a casa',   artist: 'Sin acreditar', dur: 198, src: null },
 ]
 
-/**
- * ESCRITORIO
- * ──────────
- * Lo que aparece suelto en el escritorio, a la izquierda. Son *documentos*,
- * no aplicaciones: las apps ya están en el dock, y repetirlas ahí sobra.
- *   { kind: 'doc',   name, opens }  → abre esa app
- *   { kind: 'photo', id }           → abre esa foto en el visor
- */
-export const desktop = [
-  { kind: 'doc', name: 'sobre-mi.txt', opens: 'about' },
-  { kind: 'doc', name: 'leeme.txt', opens: 'notes' },
-  { kind: 'photo', id: 'p1' },
-  { kind: 'photo', id: 'p5' },
-]
+/* El escritorio arranca vacío a propósito: sólo fondo y firma. Todo se abre
+   desde el dock. Antes había iconos sueltos aquí, pero eran lanzadores
+   repetidos de apps que ya estaban abajo. */
 
 /** Relojes de la barra superior. El primero es el tuyo. */
 export const clocks = [

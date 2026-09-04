@@ -83,7 +83,10 @@ export default function Boot({ onDone }) {
         </p>
       </div>
 
-      <p className="label fade-in absolute bottom-8" style={{ animationDelay: '1.6s', opacity: 0.7 }}>
+      {/* el opacity de antes no llegaba a aplicarse: .fade-in lleva `both` y la
+          animación gana al estilo en línea, así que el texto se pintaba al 100 %
+          y el 0.7 sólo hacía creer que estaba atenuado a propósito */}
+      <p className="label fade-in absolute bottom-8" style={{ animationDelay: '1.6s', color: 'var(--tx-2)' }}>
         pulsa para entrar
       </p>
     </div>

@@ -8,7 +8,7 @@ export default function Notes() {
       <p className="label mb-6">Cómo hacer tuyo este sitio</p>
 
       <Block n="01" title="Tus fotos">
-        Con el sitio publicado, entra en <Code>/admin</Code> y arrastra ahí los archivos: de cada original
+        Con el sitio publicado, las fotos se suben desde el panel de administración: de cada original
         —aunque venga a 4K o más— se guardan seis anchos en tres formatos (AVIF, WebP y JPEG) y una
         miniatura diminuta que se ve mientras carga la buena. El navegador se queda con la versión que le
         toca por pantalla, así que una miniatura nunca descarga el original entero. Ahí mismo se editan
@@ -28,8 +28,12 @@ export default function Notes() {
       </Block>
 
       <Block n="03" title="El escritorio">
+        <p>
+          No hay iconos sueltos en el escritorio: todo se abre desde el dock, con las teclas 1–7 o desde
+          el buscador.
+        </p>
         <ul className="mt-2 space-y-1.5">
-          <Row k="Doble clic">en un icono del escritorio, abrir</Row>
+          <Row k="Dock">todas las apps; el punto dice cuál tienes delante</Row>
           <Row k="Botón dcho.">menú del escritorio</Row>
           <Row k="Arrastrar">al borde izquierdo o derecho, media pantalla; arriba, completa</Row>
           <Row k="Bordes">tirar de cualquier lado o esquina para redimensionar</Row>

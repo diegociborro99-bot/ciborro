@@ -11,7 +11,11 @@
   --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
-:root {
+/* `:where` para que no suba la especificidad y el bloque claro siga ganando
+   sin tocarlo: así un trozo de interfaz puede declararse oscuro por su
+   cuenta —el visor— aunque el escritorio esté en claro. */
+:root,
+:where([data-theme='dark']) {
   color-scheme: dark;
 
   /* superficies */
@@ -25,7 +29,7 @@
   /* texto */
   --tx: #f0ece4;
   --tx-2: #a39c90;
-  --tx-3: #6d675e;
+  --tx-3: #8e877b;
 
   /* líneas y acento */
   --line: rgba(240, 236, 228, 0.09);
@@ -42,8 +46,19 @@
   --shadow-win: 0 1px 2px rgba(0, 0, 0, 0.4), 0 22px 60px -14px rgba(0, 0, 0, 0.78);
   --shadow-flat: 0 8px 26px -14px rgba(0, 0, 0, 0.7);
   --shadow-pop: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 44px -12px rgba(0, 0, 0, 0.6);
-  /* halo bajo el texto de los iconos del escritorio y bajo el gato */
+  /* halo bajo el texto suelto sobre el fondo, y bajo el gato */
   --halo: rgba(0, 0, 0, 0.55);
+
+  /* estados y capas del fondo, que antes iban a pelo en los componentes */
+  --danger: #d98b7f;
+  --win-close: #d4685c;
+  --win-min: #d6ab55;
+  --win-max: #79ad72;
+  --win-idle: rgba(240, 236, 228, 0.16);
+  --win-glyph: rgba(0, 0, 0, 0.62);
+  --vignette: rgba(0, 0, 0, 0.28);
+  --glow: color-mix(in srgb, var(--tx) 6%, transparent);
+  --mark-mix: 88%;
 }
 
 :root[data-theme='light'] {
@@ -55,18 +70,27 @@
   --panel-3: #e8e2d7;
   --chrome: rgba(251, 249, 245, 0.76);
   --tx: #1c1a17;
-  --tx-2: #6a635a;
-  --tx-3: #968f84;
+  --tx-2: #5d564c;
+  --tx-3: #6f695e;
   --line: rgba(28, 26, 23, 0.1);
   --line-2: rgba(28, 26, 23, 0.19);
-  --accent: #a4661a;
-  --accent-2: #4d7276;
-  --accent-soft: rgba(164, 102, 26, 0.12);
+  --accent: #8d5713;
+  --accent-2: #3f6165;
+  --accent-soft: rgba(141, 87, 19, 0.12);
   --accent-ink: #fdfaf4;
   --shadow-win: 0 1px 2px rgba(60, 50, 35, 0.1), 0 20px 55px -16px rgba(60, 50, 35, 0.42);
   --shadow-flat: 0 8px 24px -14px rgba(60, 50, 35, 0.4);
   --shadow-pop: 0 1px 2px rgba(60, 50, 35, 0.08), 0 14px 40px -12px rgba(60, 50, 35, 0.32);
   --halo: rgba(255, 253, 248, 0.85);
+  --danger: #9c3b2c;
+  --win-close: #c1503f;
+  --win-min: #9d7418;
+  --win-max: #4f8347;
+  --win-idle: rgba(28, 26, 23, 0.15);
+  --win-glyph: rgba(0, 0, 0, 0.62);
+  --vignette: rgba(60, 50, 35, 0.16);
+  --glow: color-mix(in srgb, var(--panel) 55%, transparent);
+  --mark-mix: 44%;
 }
 
 * {
@@ -132,10 +156,46 @@ textarea:focus-visible {
 }
 
 /* utilidades ------------------------------------------------------------ */
+.dock-safe {
+  /* index.html declara viewport-fit=cover, así que en un móvil con franja el
+     dock caía debajo del indicador de inicio. Mismos 12/16 px donde no la hay. */
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+}
+@media (min-width: 640px) {
+  .dock-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  }
+}
+
 .chrome-blur {
   background: var(--chrome);
   backdrop-filter: blur(22px) saturate(160%);
   -webkit-backdrop-filter: blur(22px) saturate(160%);
+}
+
+/* Fichas del dock. En CSS y no en el style en línea del componente porque la
+   magnificación —que era la única respuesta al ratón que tenía el dock— se
+   apaga en táctil y con movimiento reducido, y entonces el dock se quedaba
+   inerte. El orden importa: activa gana a hover, y pulsar gana a todo. */
+.dock-tile {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--tx);
+}
+.dock-slot:hover .dock-tile,
+.dock-slot:focus-visible .dock-tile {
+  background: var(--panel-3);
+  border-color: var(--line-2);
+}
+.dock-slot[data-active] .dock-tile {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.dock-slot:active .dock-tile {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .label {
@@ -344,5 +404,21 @@ input[type='range']::-moz-range-thumb {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    /* Sin esto, quien pide menos movimiento se comía la espera igual: las
+       animaciones desaparecían pero sus retardos no (2,4 s en blanco en «Sobre
+       mí», medio segundo escalonado en la rejilla). */
+    animation-delay: 0.01ms !important;
+    transition-delay: 0.01ms !important;
   }
+}
+
+/* Semáforo de la ventana: apagado salvo en la que tiene el foco, o al pasar el
+   ratón por encima del grupo. El color va por --tint desde el componente. */
+.lights [data-tint] {
+  background: var(--win-idle);
+  transition: background-color 0.3s var(--ease);
+}
+.lights.on [data-tint],
+.lights:hover [data-tint] {
+  background: var(--tint);
 }

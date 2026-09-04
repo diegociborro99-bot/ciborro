@@ -54,7 +54,6 @@ export default async function contentRoutes(app) {
 
     return {
       owner: settings.owner ?? null,
-      desktop: settings.desktop ?? [],
       clocks: settings.clocks ?? [],
       photos,
       projects: pr.map(({ sort, ...p }) => p),

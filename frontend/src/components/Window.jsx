@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { usePointerDrag } from '../hooks/usePointerDrag'
-import { snapZone } from '../hooks/useWindows'
+import { snapZone, MENUBAR_H } from '../hooks/useWindows'
 import { IconClose, IconMinimize, IconMaximize, IconRestore } from '../icons/Icons'
 
 /**
@@ -12,6 +12,10 @@ import { IconClose, IconMinimize, IconMaximize, IconRestore } from '../icons/Ico
  */
 
 const EDGES = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']
+/* Con el dedo no se afina a 6 px, y las asas se comen los botones del título.
+   Se decide una vez por módulo: el EDGES.map(useEdge) sigue creando los ocho,
+   que el orden de hooks no puede depender de esto. */
+const COARSE = matchMedia('(pointer: coarse)').matches
 
 const CURSOR = {
   n: 'ns-resize',
@@ -58,16 +62,27 @@ export default function Window({
       onFocus()
       live.current = { x: win.x, y: win.y, w: win.w, h: win.h }
       ref.current?.style.setProperty('transition', 'none')
-      return { x: win.x, y: win.y, zone: null }
+      return { x: win.x, y: win.y, zone: null, max: win.maximized, restore: win.restore }
     },
     onMove: ({ dx, dy, x, y, ctx }) => {
-      // arrastrar una ventana maximizada la devuelve a su tamaño
-      if (win.maximized) {
+      /* Arrastrar una maximizada la devuelve a su tamaño, UNA vez. El estado
+         va en ctx porque el listener se registra en el pointerdown y captura
+         ese render: `win.maximized` sigue valiendo true todo el gesto, así que
+         mirarlo a él llamaba a toggleMaximize en cada pointermove y la ventana
+         acababa donde le daba la gana. Al encoger, la ventana se recoloca para
+         que quede agarrada por el mismo punto proporcional del título. */
+      if (ctx.max) {
+        ctx.max = false
+        const r = ctx.restore ?? { w: win.w, h: win.h }
+        const grip = (x - dx - win.x) / win.w
+        live.current.w = r.w
+        live.current.h = r.h
+        ctx.x = x - dx - r.w * grip
         onToggleMaximize()
-        return
+        requestAnimationFrame(paint)
       }
       live.current.x = ctx.x + dx
-      live.current.y = Math.max(2, ctx.y + dy)
+      live.current.y = Math.max(MENUBAR_H + 2, ctx.y + dy)
       paint()
       const zone = snapZone(x, y)
       if (zone !== ctx.zone) {
@@ -102,8 +117,10 @@ export default function Window({
           l.x = ctx.x + (ctx.w - l.w)
         }
         if (edge.includes('n')) {
-          l.h = Math.max(win.minH, ctx.h - dy)
-          l.y = ctx.y + (ctx.h - l.h)
+          // mismo tope que al mover: nada se mete bajo la barra superior
+          const top = Math.max(MENUBAR_H + 2, ctx.y + dy)
+          l.h = Math.max(win.minH, ctx.y + ctx.h - top)
+          l.y = ctx.y + ctx.h - l.h
         }
         paint()
       },
@@ -182,16 +199,19 @@ export default function Window({
       <header
         {...moveDrag}
         onDoubleClick={onToggleMaximize}
-        className="flex h-9 shrink-0 cursor-grab touch-none items-center gap-3 border-b px-3 select-none active:cursor-grabbing"
+        className="flex h-11 shrink-0 cursor-grab touch-none items-center gap-3 border-b px-3 select-none sm:h-9 active:cursor-grabbing"
         style={{ borderColor: 'var(--line)', background: 'var(--panel-2)' }}
       >
-        <div className="flex items-center gap-1.5">
-          <TitleButton label="Cerrar" onClick={onClose} tint="#d4685c" Icon={IconClose} />
-          <TitleButton label="Minimizar" onClick={onMinimize} tint="#d6ab55" Icon={IconMinimize} />
+        {/* apagados en la ventana que no manda: con el escritorio vacío las
+            ventanas son toda la composición, y seis puntos igual de saturados
+            no dicen cuál tiene el foco */}
+        <div className={`lights group/lights flex items-center gap-3 sm:gap-1.5 ${active ? 'on' : ''}`}>
+          <TitleButton label="Cerrar" onClick={onClose} tint="var(--win-close)" Icon={IconClose} />
+          <TitleButton label="Minimizar" onClick={onMinimize} tint="var(--win-min)" Icon={IconMinimize} />
           <TitleButton
             label={win.maximized ? 'Restaurar' : 'Maximizar'}
             onClick={onToggleMaximize}
-            tint="#79ad72"
+            tint="var(--win-max)"
             Icon={win.maximized ? IconRestore : IconMaximize}
           />
         </div>
@@ -207,7 +227,7 @@ export default function Window({
       <div className="scroll-thin min-h-0 flex-1 overflow-auto">{children}</div>
 
       {/* asas de redimensionado por los ocho lados */}
-      {win.resizable && !win.maximized && (
+      {win.resizable && !win.maximized && !COARSE && (
         <>
           {EDGES.map((edge, i) => (
             <span
@@ -262,12 +282,13 @@ function TitleButton({ label, onClick, tint, Icon }) {
       title={label}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={onClick}
-      className="group grid h-3.5 w-3.5 place-items-center rounded-full transition-transform duration-200 hover:scale-115"
-      style={{ background: tint }}
+      data-tint
+      className="relative grid h-3.5 w-3.5 place-items-center rounded-full transition-transform duration-200 hover:scale-115 max-sm:after:absolute max-sm:after:-inset-x-1.5 max-sm:after:-inset-y-[15px] max-sm:after:content-['']"
+      style={{ '--tint': tint }}
     >
       <span
-        className="opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-        style={{ color: 'rgba(0,0,0,.62)' }}
+        className="opacity-0 transition-opacity duration-150 group-hover/lights:opacity-100"
+        style={{ color: 'var(--win-glyph)' }}
       >
         <Icon size={9} strokeWidth={2.6} />
       </span>
