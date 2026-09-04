@@ -34,6 +34,14 @@ export default function Gallery({ dense, openIndex, onOpenIndex }) {
     [photos, year, place]
   )
 
+  /* Índices (sobre `photos`) que el visor puede recorrer: los del filtro. Si la
+     foto abierta no está en él —enlace profundo, o filtro cambiado con el visor
+     abierto— se vuelve al archivo entero, que es mejor que dejarlo sin salida. */
+  const ring = useMemo(() => {
+    const idx = shown.map((ph) => photos.indexOf(ph))
+    return openIndex !== null && !idx.includes(openIndex) ? photos.map((_, i) => i) : idx
+  }, [shown, photos, openIndex])
+
   const target = dense ? 205 : 300
   const cols = Math.max(1, Math.min(4, Math.round(width / target) || 1))
   // ancho real de cada columna: así se pide la versión justa, ni un píxel más
@@ -131,7 +139,7 @@ export default function Gallery({ dense, openIndex, onOpenIndex }) {
       </div>
 
       {openIndex !== null && (
-        <Lightbox photos={photos} index={openIndex} onIndex={onOpenIndex} onClose={() => onOpenIndex(null)} />
+        <Lightbox photos={photos} ring={ring} index={openIndex} onIndex={onOpenIndex} onClose={() => onOpenIndex(null)} />
       )}
     </>
   )
@@ -232,17 +240,18 @@ function Select({ options, value, onChange, labelAll, count }) {
 
 /* ── visor ─────────────────────────────────────────────────────────── */
 
-function Lightbox({ photos, index, onIndex, onClose }) {
+function Lightbox({ photos, ring, index, onIndex, onClose }) {
   const p = photos[index]
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [info, setInfo] = useState(true)
   const [auto, setAuto] = useState(false)
 
+  const at = ring.indexOf(index)
   const go = (d) => {
     setZoom(1)
     setPan({ x: 0, y: 0 })
-    onIndex((i) => (i + d + photos.length) % photos.length)
+    onIndex(ring[(at + d + ring.length) % ring.length])
   }
 
   useEffect(() => {
@@ -256,6 +265,11 @@ function Lightbox({ photos, index, onIndex, onClose }) {
         setZoom(1)
         setPan({ x: 0, y: 0 })
       } else if (e.key.toLowerCase() === 'i') setInfo((v) => !v)
+      else if (e.key === ' ') {
+        // la chuleta de abajo lo promete desde siempre; hasta ahora no hacía nada
+        e.preventDefault()
+        setAuto((v) => !v)
+      }
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
@@ -280,12 +294,13 @@ function Lightbox({ photos, index, onIndex, onClose }) {
   const drag = usePointerDrag({
     onStart: () => ({ pan, moved: 0 }),
     onMove: ({ dx, dy, ctx }) => {
-      ctx.moved = Math.max(ctx.moved, Math.abs(dx))
+      ctx.moved = Math.max(ctx.moved, Math.abs(dx), Math.abs(dy))
       if (zoom > 1) setPan({ x: ctx.pan.x + dx, y: ctx.pan.y + dy })
     },
     onEnd: ({ dx, ctx }) => {
       if (zoom === 1 && Math.abs(dx) > 70) go(dx < 0 ? 1 : -1)
-      else if (zoom === 1 && ctx.moved < 4) setZoom(2)
+      // un clic acerca, y otro devuelve: antes se entraba al zoom y no se salía
+      else if (ctx.moved < 4) setZoom((z) => (z > 1 ? 1 : 2))
     },
   })
 
@@ -293,7 +308,7 @@ function Lightbox({ photos, index, onIndex, onClose }) {
   // diferencia entre pasar de una a otra al instante o esperar es esto. Se
   // pintan de verdad (1 px, invisibles) para que el navegador negocie formato
   // y ancho igual que en el visor y acabe pidiendo exactamente la misma URL.
-  const vecinas = [1, -1].map((d) => photos[(index + d + photos.length) % photos.length]).filter(Boolean)
+  const vecinas = [1, -1].map((d) => photos[ring[(at + d + ring.length) % ring.length]]).filter(Boolean)
 
   return createPortal(
     <div
@@ -307,7 +322,7 @@ function Lightbox({ photos, index, onIndex, onClose }) {
       </div>
       <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-3">
         <span className="tnum text-[12px] text-white/45">
-          {String(index + 1).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}
+          {String(at + 1).padStart(2, '0')} / {String(ring.length).padStart(2, '0')}
         </span>
         <div className="flex items-center gap-1">
           <Round onClick={() => setZoom((z) => Math.max(1, z / 1.4))} label="Alejar" disabled={zoom <= 1}>
@@ -365,9 +380,15 @@ function Lightbox({ photos, index, onIndex, onClose }) {
             {...drag}
             className="overflow-hidden rounded-lg touch-none"
             style={{
-              height: 'min(58vh, 600px)',
+              /* Alto = lo que deje la ventana, pero nunca más de lo que permite
+                 el ancho disponible al ratio de la foto. Los 240 son cabecera,
+                 ficha, tira de miniaturas y chuleta; los 128, las dos flechas de
+                 44 más aire. Antes un maxWidth de 90vw mandaba sobre el
+                 aspect-ratio y el <img> recortaba: cinco de las doce fotos se
+                 veían al 61 % en móvil, y en 1080p la foto se clavaba en 600 px
+                 sobrando 860. */
+              height: `max(120px, min(calc(100svh - 240px), calc((100vw - 128px) * ${p.ratio})))`,
               aspectRatio: `1 / ${p.ratio}`,
-              maxWidth: '90vw',
               cursor: zoom > 1 ? 'grab' : 'zoom-in',
               boxShadow: '0 30px 80px -30px rgba(0,0,0,.9)',
             }}
@@ -402,7 +423,9 @@ function Lightbox({ photos, index, onIndex, onClose }) {
       </div>
 
       <div className="scroll-thin flex shrink-0 justify-start gap-1.5 overflow-x-auto px-4 py-4 sm:justify-center">
-        {photos.map((t, i) => (
+        {ring.map((i) => photos[i]).map((t, n) => {
+          const i = ring[n]
+          return (
           <button
             key={t.id}
             type="button"
@@ -420,7 +443,8 @@ function Lightbox({ photos, index, onIndex, onClose }) {
           >
             <Photo photo={t} className="h-full w-full" sizes="44px" maxWidth={44} />
           </button>
-        ))}
+          )
+        })}
       </div>
 
       <p className="pb-3 text-center text-[10.5px] text-white/25">

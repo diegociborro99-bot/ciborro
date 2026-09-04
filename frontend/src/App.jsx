@@ -104,6 +104,12 @@ export default function App() {
   const topWin = useMemo(() => wins.filter((w) => !w.minimized).sort((a, b) => b.z - a.z)[0], [wins])
   // lienzo desnudo: nada abierto, ni siquiera minimizado en el dock
   const bare = !topWin
+  /* Visor abierto: se lleva el teclado. Si no, pulsar 3 abría otra app por
+     detrás de la foto, y F repartía las ventanas que no se ven. */
+  const viewer = useMemo(
+    () => photoIndex !== null && wins.some((w) => w.id === 'gallery' && !w.minimized && !w.closing),
+    [photoIndex, wins]
+  )
 
   /* — abrir una foto desde cualquier sitio — */
   const openPhoto = useCallback(
@@ -158,6 +164,8 @@ export default function App() {
         return
       }
       if (typing || e.metaKey || e.ctrlKey || e.altKey) return
+      // el visor tiene sus propias teclas (flechas, zoom, I, espacio, Esc)
+      if (viewer) return
 
       if (e.key === 'Escape') {
         setExpose(false)
@@ -184,7 +192,7 @@ export default function App() {
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
-  }, [toggle, topWin, close])
+  }, [toggle, topWin, close, viewer])
 
   /* — menús de la barra superior — */
   const flipTheme = useCallback(() => {
