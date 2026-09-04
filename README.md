@@ -266,6 +266,10 @@ fotogramas y la máquina de estados vienen de
 texto está en `frontend/src/assets/oneko-LICENSE.txt` y tiene que viajar con el
 código. A su vez es un port del *neko* japonés de 1989.
 
+El favicon (`frontend/public/favicon.svg`) sale de ese mismo sprite: es el
+fotograma sentado, con el interior relleno para que se lea a 16 px y el suelo
+en el ámbar del acento. Cae bajo la misma licencia MIT de oneko.
+
 ## Accesibilidad
 
 Todo lo interactivo es un elemento nativo con `aria-label`, el foco de teclado se
