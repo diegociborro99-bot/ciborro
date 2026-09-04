@@ -172,7 +172,7 @@ export default function Player({ onNowPlaying }) {
           <span className="serif text-[13px] leading-none" style={{ color: 'var(--tx-2)' }}>
             Cinta
           </span>
-          <span className="label" style={{ fontSize: 8 }}>
+          <span className="text-[9px] font-medium tracking-[0.1em] uppercase" style={{ color: 'var(--tx-2)' }}>
             mod. 01
           </span>
         </div>
@@ -326,7 +326,7 @@ export default function Player({ onNowPlaying }) {
           </button>
         </div>
 
-        <p className="text-center text-[10px]" style={{ color: 'var(--tx-3)' }}>
+        <p className="text-center text-[11px]" style={{ color: 'var(--tx-2)' }}>
           Gira el aro · pulsa el centro
         </p>
       </div>
@@ -351,8 +351,10 @@ function RingLabel({ pos, onClick, label, icon }) {
       onPointerDown={(e) => e.stopPropagation()}
       onClick={onClick}
       aria-label={label ?? icon}
-      className={`absolute ${place} grid h-6 w-9 place-items-center rounded transition-opacity duration-200 hover:opacity-100`}
-      style={{ color: 'var(--tx-2)', opacity: 0.72, cursor: 'pointer' }}
+      className={`absolute ${place} grid h-6 w-9 place-items-center rounded transition-colors duration-200`}
+      style={{ color: 'var(--tx-2)', cursor: 'pointer' }}
+      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--tx)')}
+      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--tx-2)')}
     >
       {label ? (
         <span className="text-[9px] font-medium tracking-[0.09em] uppercase">{label}</span>

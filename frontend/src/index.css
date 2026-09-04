@@ -11,7 +11,11 @@
   --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
-:root {
+/* `:where` para que no suba la especificidad y el bloque claro siga ganando
+   sin tocarlo: así un trozo de interfaz puede declararse oscuro por su
+   cuenta —el visor— aunque el escritorio esté en claro. */
+:root,
+:where([data-theme='dark']) {
   color-scheme: dark;
 
   /* superficies */
@@ -50,6 +54,8 @@
   --win-close: #d4685c;
   --win-min: #d6ab55;
   --win-max: #79ad72;
+  --win-idle: rgba(240, 236, 228, 0.16);
+  --win-glyph: rgba(0, 0, 0, 0.62);
   --vignette: rgba(0, 0, 0, 0.28);
   --glow: color-mix(in srgb, var(--tx) 6%, transparent);
   --mark-mix: 88%;
@@ -80,6 +86,8 @@
   --win-close: #c1503f;
   --win-min: #9d7418;
   --win-max: #4f8347;
+  --win-idle: rgba(28, 26, 23, 0.15);
+  --win-glyph: rgba(0, 0, 0, 0.62);
   --vignette: rgba(60, 50, 35, 0.16);
   --glow: color-mix(in srgb, var(--panel) 55%, transparent);
   --mark-mix: 44%;
@@ -402,4 +410,15 @@ input[type='range']::-moz-range-thumb {
     animation-delay: 0.01ms !important;
     transition-delay: 0.01ms !important;
   }
+}
+
+/* Semáforo de la ventana: apagado salvo en la que tiene el foco, o al pasar el
+   ratón por encima del grupo. El color va por --tint desde el componente. */
+.lights [data-tint] {
+  background: var(--win-idle);
+  transition: background-color 0.3s var(--ease);
+}
+.lights.on [data-tint],
+.lights:hover [data-tint] {
+  background: var(--tint);
 }

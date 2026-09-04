@@ -439,7 +439,7 @@ export default function App() {
       {/* guía de anclaje mientras se arrastra hacia un borde */}
       {hintRect && (
         <div
-          className="fade-in pointer-events-none fixed z-[6000] rounded-xl"
+          className="fade-in pointer-events-none fixed z-[6000] rounded-[var(--radius)]"
           style={{
             left: hintRect.x,
             top: hintRect.y,
@@ -447,6 +447,10 @@ export default function App() {
             height: hintRect.h,
             background: 'var(--accent-soft)',
             border: '1.5px solid var(--accent)',
+            // el nodo se reutiliza mientras se siga arrastrando por los bordes:
+            // sin esto, pasar de izquierda a arriba teletransporta la guía
+            transition:
+              'left .16s var(--ease), top .16s var(--ease), width .16s var(--ease), height .16s var(--ease)',
           }}
         />
       )}

@@ -312,8 +312,14 @@ function Lightbox({ photos, ring, index, onIndex, onClose }) {
 
   return createPortal(
     <div
+      // el visor es negro pase lo que pase: se declara oscuro y sus tokens
+      // dejan de bailar con el tema del escritorio
+      data-theme="dark"
       className="fade-in fixed inset-0 z-[9500] flex flex-col"
-      style={{ background: 'rgba(7,6,5,.95)', backdropFilter: 'blur(12px)' }}
+      style={{
+        background: 'color-mix(in srgb, var(--bg-deep) 95%, transparent)',
+        backdropFilter: 'blur(12px)',
+      }}
     >
       <div aria-hidden className="pointer-events-none fixed h-px w-px overflow-hidden opacity-0">
         {vecinas.map((n) => (
@@ -331,7 +337,7 @@ function Lightbox({ photos, ring, index, onIndex, onClose }) {
               <path d="m16 16 4.4 4.4M8.4 11h5.2" strokeLinecap="round" />
             </svg>
           </Round>
-          <span className="tnum w-11 text-center text-[11.5px] text-white/45">{Math.round(zoom * 100)}%</span>
+          <span className="tnum hidden w-11 text-center text-[11.5px] text-white/45 sm:block">{Math.round(zoom * 100)}%</span>
           <Round onClick={() => setZoom((z) => Math.min(4, z * 1.4))} label="Acercar" disabled={zoom >= 4}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="11" cy="11" r="6.6" />
@@ -447,7 +453,7 @@ function Lightbox({ photos, ring, index, onIndex, onClose }) {
         })}
       </div>
 
-      <p className="pb-3 text-center text-[10.5px] text-white/25">
+      <p className="hidden pb-3 text-center text-[10.5px] sm:block" style={{ color: 'var(--tx-2)' }}>
         ← → cambiar · + − zoom · 0 restablecer · I ficha · espacio pase · Esc salir
       </p>
     </div>,
@@ -463,7 +469,7 @@ function Round({ onClick, label, children, disabled }) {
       disabled={disabled}
       aria-label={label}
       title={label}
-      className="grid h-8 w-8 place-items-center rounded-full text-white/60 transition-all duration-200 hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-25"
+      className="grid h-11 w-11 place-items-center rounded-full text-white/60 transition-all duration-200 hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-25 sm:h-8 sm:w-8"
     >
       {children}
     </button>

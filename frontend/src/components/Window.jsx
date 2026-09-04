@@ -202,7 +202,10 @@ export default function Window({
         className="flex h-11 shrink-0 cursor-grab touch-none items-center gap-3 border-b px-3 select-none sm:h-9 active:cursor-grabbing"
         style={{ borderColor: 'var(--line)', background: 'var(--panel-2)' }}
       >
-        <div className="group/lights flex items-center gap-3 sm:gap-1.5">
+        {/* apagados en la ventana que no manda: con el escritorio vacío las
+            ventanas son toda la composición, y seis puntos igual de saturados
+            no dicen cuál tiene el foco */}
+        <div className={`lights group/lights flex items-center gap-3 sm:gap-1.5 ${active ? 'on' : ''}`}>
           <TitleButton label="Cerrar" onClick={onClose} tint="var(--win-close)" Icon={IconClose} />
           <TitleButton label="Minimizar" onClick={onMinimize} tint="var(--win-min)" Icon={IconMinimize} />
           <TitleButton
@@ -279,12 +282,13 @@ function TitleButton({ label, onClick, tint, Icon }) {
       title={label}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={onClick}
+      data-tint
       className="relative grid h-3.5 w-3.5 place-items-center rounded-full transition-transform duration-200 hover:scale-115 max-sm:after:absolute max-sm:after:-inset-x-1.5 max-sm:after:-inset-y-[15px] max-sm:after:content-['']"
-      style={{ background: tint }}
+      style={{ '--tint': tint }}
     >
       <span
         className="opacity-0 transition-opacity duration-150 group-hover/lights:opacity-100"
-        style={{ color: 'rgba(0,0,0,.62)' }}
+        style={{ color: 'var(--win-glyph)' }}
       >
         <Icon size={9} strokeWidth={2.6} />
       </span>

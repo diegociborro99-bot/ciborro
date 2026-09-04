@@ -19,7 +19,7 @@ export default function Projects() {
                 {...(p.href ? { href: p.href, target: '_blank', rel: 'noreferrer' } : {})}
                 className="group grid grid-cols-[2rem_1fr_auto] items-start gap-x-4 border-t py-5 transition-colors duration-300"
                 style={{ borderColor: 'var(--line)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-soft)')}
+                onMouseEnter={(e) => (e.currentTarget.style.background = p.href ? 'var(--accent-soft)' : 'var(--panel-2)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               >
                 <span className="tnum label pt-1.5">{String(i + 1).padStart(2, '0')}</span>

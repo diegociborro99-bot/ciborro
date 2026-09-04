@@ -60,11 +60,11 @@ export default function WorldClock() {
 
       {open && (
         <div
-          className="animate-in absolute right-0 mt-1.5 w-60 overflow-hidden rounded-xl p-1.5"
+          className="pop-in absolute right-0 mt-1 w-60 overflow-hidden rounded-xl p-1.5"
           style={{
             background: 'var(--panel)',
             border: '1px solid var(--line-2)',
-            boxShadow: 'var(--shadow-win)',
+            boxShadow: 'var(--shadow-pop)',
           }}
         >
           <p className="label px-2.5 pt-1.5 pb-2">Relojes</p>
