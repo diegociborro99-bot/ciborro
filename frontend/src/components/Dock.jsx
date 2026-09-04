@@ -70,7 +70,7 @@ export default function Dock({
       : 'scale .08s linear, translate .08s linear') + extraProps
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[8000] flex justify-center pb-3 sm:pb-4">
+    <div className="dock-safe pointer-events-none fixed inset-x-0 bottom-0 z-[8000] flex justify-center">
       {/*
         El desplazamiento horizontal (para que el dock quepa en móvil) va en
         este envoltorio, no en la barra: un contenedor con overflow recorta por

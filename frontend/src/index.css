@@ -148,6 +148,17 @@ textarea:focus-visible {
 }
 
 /* utilidades ------------------------------------------------------------ */
+.dock-safe {
+  /* index.html declara viewport-fit=cover, así que en un móvil con franja el
+     dock caía debajo del indicador de inicio. Mismos 12/16 px donde no la hay. */
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+}
+@media (min-width: 640px) {
+  .dock-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  }
+}
+
 .chrome-blur {
   background: var(--chrome);
   backdrop-filter: blur(22px) saturate(160%);

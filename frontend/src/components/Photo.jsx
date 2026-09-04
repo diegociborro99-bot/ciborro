@@ -27,6 +27,9 @@ export default function Photo({
   maxWidth,
 }) {
   const [loaded, setLoaded] = useState(false)
+  // si el archivo falla, al marcador generado: el JSDoc promete que el sitio
+  // nunca se ve roto, y hasta ahora eso sólo cubría el caso de no haber foto
+  const [failed, setFailed] = useState(false)
 
   const box = {
     background: 'var(--panel-2)',
@@ -73,6 +76,7 @@ export default function Photo({
             fetchPriority={priority ? 'high' : eager ? 'low' : 'auto'}
             decoding="async"
             onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
             className="h-full w-full object-cover"
             style={{
               opacity: loaded ? 1 : 0,
@@ -97,6 +101,7 @@ export default function Photo({
           decoding="async"
           sizes={sizes}
           onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
           className="h-full w-full object-cover"
           style={{ opacity: loaded ? 1 : 0, transition: 'opacity .45s var(--ease)' }}
         />

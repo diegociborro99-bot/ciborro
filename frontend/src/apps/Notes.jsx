@@ -8,7 +8,7 @@ export default function Notes() {
       <p className="label mb-6">Cómo hacer tuyo este sitio</p>
 
       <Block n="01" title="Tus fotos">
-        Con el sitio publicado, entra en <Code>/admin</Code> y arrastra ahí los archivos: de cada original
+        Con el sitio publicado, las fotos se suben desde el panel de administración: de cada original
         —aunque venga a 4K o más— se guardan seis anchos en tres formatos (AVIF, WebP y JPEG) y una
         miniatura diminuta que se ve mientras carga la buena. El navegador se queda con la versión que le
         toca por pantalla, así que una miniatura nunca descarga el original entero. Ahí mismo se editan

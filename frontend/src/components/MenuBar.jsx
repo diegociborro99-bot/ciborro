@@ -40,13 +40,18 @@ export default function MenuBar({ menus, theme, onToggleTheme, onSearch, nowPlay
   return (
     <header
       ref={barRef}
-      className="chrome-blur fixed inset-x-0 top-0 z-[9000] flex h-[34px] items-center gap-1 border-b px-2.5 sm:px-3"
-      style={{ borderColor: 'var(--line)' }}
+      className="chrome-blur fixed inset-x-0 top-0 z-[9000] flex h-[34px] items-center gap-1 border-b"
+      style={{
+        borderColor: 'var(--line)',
+        paddingLeft: 'max(0.75rem, env(safe-area-inset-left))',
+        paddingRight: 'max(0.75rem, env(safe-area-inset-right))',
+      }}
     >
-      <span className="serif mr-2 shrink-0 pr-1 text-[17px] leading-none sm:text-[18px]" style={{ color: 'var(--tx)' }}>
+      {/* el único h1 de la página; el preflight de Tailwind ya iguala tamaño y peso */}
+      <h1 className="serif mr-2 shrink-0 pr-1 text-[17px] leading-none sm:text-[18px]" style={{ color: 'var(--tx)' }}>
         {owner.name.split(' ')[0]}
         <span style={{ color: 'var(--accent)' }}>.</span>
-      </span>
+      </h1>
 
       <nav className="flex min-w-0 items-center gap-0.5">
         {menus.map((m) => (
