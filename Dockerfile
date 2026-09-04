@@ -36,6 +36,11 @@ COPY backend/ ./
 # el servidor busca la web en ../public respecto de src/
 COPY --from=web /app/frontend/dist ./public
 
+# Sin R2, las fotos van a este directorio y las escribe el proceso, que corre
+# como `node`. Los COPY de arriba dejan todo en manos de root, así que hay que
+# crearlo aquí con su dueño: si no, el arranque muere con EACCES.
+RUN mkdir -p data/fotos && chown -R node:node data
+
 USER node
 EXPOSE 3000
 
