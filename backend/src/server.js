@@ -56,14 +56,25 @@ app.get('/admin', (req, reply) =>
    Sólo cuando no hay R2. En producción con R2 esto no se registra siquiera:
    los bytes de una foto no vuelven a pasar por Node después de subirla. */
 if (!usingR2) {
-  await mkdir(localDir, { recursive: true })
-  await app.register(fastifyStatic, {
-    root: localDir,
-    prefix: '/fotos/',
-    decorateReply: false,
-    setHeaders: (res) => res.setHeader('cache-control', 'public, max-age=31536000, immutable'),
-  })
-  app.log.warn(`Fotos en disco (${localDir}). Sin volumen, un despliegue se las lleva.`)
+  try {
+    await mkdir(localDir, { recursive: true })
+    await app.register(fastifyStatic, {
+      root: localDir,
+      prefix: '/fotos/',
+      decorateReply: false,
+      setHeaders: (res) => res.setHeader('cache-control', 'public, max-age=31536000, immutable'),
+    })
+    app.log.warn(`Fotos en disco (${localDir}). Sin volumen, un despliegue se las lleva.`)
+  } catch (e) {
+    /* Que no se pueda escribir aquí no es motivo para tirar el sitio entero:
+       sin R2 sólo se caen las fotos en disco, y el escritorio se sirve igual.
+       Antes esto reventaba el arranque y dejaba el contenedor en bucle. */
+    app.log.error(
+      { err: e },
+      `No se puede escribir en ${localDir}: las fotos en disco quedan desactivadas. ` +
+        `Configura R2, o da permiso de escritura a ese directorio (o apunta STORAGE_DIR a uno que lo tenga).`
+    )
+  }
 }
 
 /* — el escritorio, ya compilado — */
