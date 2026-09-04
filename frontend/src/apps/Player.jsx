@@ -146,7 +146,7 @@ export default function Player({ onNowPlaying }) {
   const lcdBg = lit ? '#e8b866' : '#9a9a90'
 
   return (
-    <div className="flex h-full items-center justify-center p-4">
+    <div className="flex min-h-full items-center justify-center p-4">
       {track.src && (
         <audio
           ref={audioRef}

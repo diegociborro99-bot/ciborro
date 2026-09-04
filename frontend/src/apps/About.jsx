@@ -5,13 +5,13 @@ export default function About() {
   const { owner } = useContent()
   return (
     <div className="px-6 pt-6 pb-8 sm:px-8">
-      <Handwriting text={owner.greeting} height={78} color="var(--accent)" />
+      <Handwriting text={owner.greeting} height={78} color="var(--accent)" duration={1} />
 
-      <h3 className="serif animate-in mt-5 text-[clamp(1.9rem,4.4vw,2.9rem)]" style={{ animationDelay: '2.4s' }}>
+      <h3 className="serif animate-in mt-5 text-[clamp(1.9rem,4.4vw,2.9rem)]" style={{ animationDelay: '.9s' }}>
         Soy {owner.name}.
       </h3>
 
-      <p className="label animate-in mt-2" style={{ animationDelay: '2.5s' }}>
+      <p className="label animate-in mt-2" style={{ animationDelay: '.96s' }}>
         {owner.role}
       </p>
 
@@ -20,7 +20,7 @@ export default function About() {
           <p
             key={i}
             className="animate-in text-[15px] leading-[1.72]"
-            style={{ color: 'var(--tx-2)', animationDelay: `${2.6 + i * 0.08}s` }}
+            style={{ color: 'var(--tx-2)', animationDelay: `${1.02 + i * 0.06}s` }}
           >
             {p}
           </p>
@@ -29,7 +29,7 @@ export default function About() {
 
       <div
         className="animate-in mt-8 flex flex-wrap gap-x-6 gap-y-3 border-t pt-6"
-        style={{ borderColor: 'var(--line)', animationDelay: '2.8s' }}
+        style={{ borderColor: 'var(--line)', animationDelay: '1.2s' }}
       >
         {owner.links.map((l) => (
           <a

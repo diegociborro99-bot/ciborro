@@ -342,7 +342,7 @@ function Line({ l }) {
       className="break-words whitespace-pre-wrap"
       style={{
         color:
-          l.k === 'err' ? '#d98b7f' : l.k === 'sys' ? 'var(--tx-3)' : l.k === 'in' ? 'var(--tx)' : 'var(--tx-2)',
+          l.k === 'err' ? 'var(--danger)' : l.k === 'sys' ? 'var(--tx-3)' : l.k === 'in' ? 'var(--tx)' : 'var(--tx-2)',
       }}
     >
       {l.k === 'in' && (

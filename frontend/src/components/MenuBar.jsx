@@ -13,7 +13,14 @@ function Bars() {
         <span
           key={n}
           className="w-[2px] rounded-full"
-          style={{ background: 'var(--accent)', animation: `mbEq ${0.62 + n * 0.19}s ease-in-out infinite` }}
+          style={{
+            background: 'var(--accent)',
+            // alto de partida: la animación gana en la cascada, así que mientras
+            // suena se ve igual, y con movimiento reducido queda un icono quieto
+            // y asimétrico en lugar de tres barras invisibles
+            height: ['45%', '100%', '65%'][n],
+            animation: `mbEq ${0.62 + n * 0.19}s ease-in-out infinite`,
+          }}
         />
       ))}
     </span>
@@ -61,10 +68,12 @@ export default function MenuBar({ menus, theme, onToggleTheme, onSearch, nowPlay
               onClick={() => setOpenMenu((v) => (v === m.label ? null : m.label))}
               onMouseEnter={() => openMenu && setOpenMenu(m.label)}
               aria-expanded={openMenu === m.label}
-              className="rounded-md px-2 py-1 text-[12.5px] whitespace-nowrap transition-colors duration-150"
+              className="rounded-md px-2 py-1 text-[12.5px] whitespace-nowrap transition-colors duration-150 hover:bg-[var(--line)]"
               style={{
-                color: openMenu === m.label ? 'var(--tx)' : 'var(--tx-2)',
-                background: openMenu === m.label ? 'var(--line)' : 'transparent',
+                color: openMenu === m.label ? 'var(--accent)' : 'var(--tx-2)',
+                // undefined y no 'transparent': si no, el estilo en línea pisa
+                // el hover de la clase y el botón deja de responder al ratón
+                background: openMenu === m.label ? 'var(--accent-soft)' : undefined,
               }}
             >
               {m.label}
@@ -73,7 +82,7 @@ export default function MenuBar({ menus, theme, onToggleTheme, onSearch, nowPlay
             {openMenu === m.label && (
               <div
                 role="menu"
-                className="pop-in absolute top-full left-0 mt-1 w-56 rounded-xl p-1.5"
+                className="pop-in absolute top-full left-0 mt-1 w-56 rounded-xl p-1.5 max-sm:fixed max-sm:inset-x-2 max-sm:top-[38px] max-sm:mt-0 max-sm:w-auto"
                 style={{ background: 'var(--panel)', border: '1px solid var(--line-2)', boxShadow: 'var(--shadow-pop)' }}
               >
                 {m.items.map((it, n) =>
@@ -88,7 +97,7 @@ export default function MenuBar({ menus, theme, onToggleTheme, onSearch, nowPlay
                         it.action?.()
                         setOpenMenu(null)
                       }}
-                      className="flex w-full items-center justify-between gap-4 rounded-lg px-2.5 py-1.5 text-left text-[13px] transition-colors duration-150"
+                      className="flex w-full items-center justify-between gap-4 rounded-lg px-2.5 py-1.5 text-left text-[13px] transition-colors duration-150 max-sm:py-3"
                       style={{ color: 'var(--tx)' }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-soft)')}
                       onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}

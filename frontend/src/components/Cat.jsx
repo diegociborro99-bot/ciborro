@@ -96,7 +96,7 @@ export default function Cat({ enabled = true, scale = 1, speed = SPEED }) {
     if (!enabled) return
     const el = ref.current
     if (!el) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const reducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     const size = F * scale
 
@@ -269,6 +269,19 @@ export default function Cat({ enabled = true, scale = 1, speed = SPEED }) {
      */
     place()
     setSprite('idle', 0)
+
+    /* Con movimiento reducido el gato se echa a dormir en una esquina en vez de
+       perseguir el cursor. Salir arriba, antes, dejaba el div montado sin
+       colocar: un cuadro clavado en 0,0 con el primer fotograma de la hoja (un
+       gato arañando una pared) medio tapado por la barra. Y no se puede salir
+       antes de aquí: size, x, y, place y setSprite se declaran más abajo. */
+    if (reducido) {
+      x = size
+      y = window.innerHeight - size
+      place()
+      setSprite('sleeping', 0)
+      return
+    }
 
     document.addEventListener('pointermove', onMove, { passive: true })
     document.addEventListener('pointerdown', onMove, { passive: true })

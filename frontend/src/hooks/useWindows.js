@@ -8,6 +8,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 export const MENUBAR_H = 34
 export const DOCK_H = 96
+/* En compacto el dock mide menos (medido: 70 px desde abajo). Sin distinguirlo,
+   una ventana alta nace metida bajo él y tapa justo su propio pie. */
+export const DOCK_H_COMPACT = 70
+const dockH = () => (window.innerWidth < 640 ? DOCK_H_COMPACT : DOCK_H)
 const STORE = 'win-layout-v2'
 
 function bounds() {
@@ -21,8 +25,15 @@ function bounds() {
 
 function clampToViewport(win) {
   const { vw, vh } = bounds()
-  const w = Math.max(win.minW, Math.min(win.w, vw - 16))
-  const h = Math.max(win.minH, Math.min(win.h, vh - MENUBAR_H - 16))
+  const compact = vw < 780
+  const maxW = vw - (compact ? 20 : 16)
+  const maxH = vh - MENUBAR_H - (compact ? dockH() + 18 : 16)
+  /* El orden importa y antes estaba al revés: con el mínimo aplicado el último,
+     ganaba siempre, y en un móvil de 360 px «Pastorea a los gatos» (minW 380)
+     nacía 30 px fuera de una pantalla sin scroll. Así el mínimo manda mientras
+     quepa, y cuando no cabe el que cede es el mínimo, no la pantalla. */
+  const w = Math.min(Math.max(win.w, win.minW), maxW)
+  const h = Math.min(Math.max(win.h, win.minH), maxH)
   return {
     ...win,
     w,
@@ -205,7 +216,7 @@ function spawn(def, id, index, z, remembered) {
     return clampToViewport({
       ...base,
       w: vw - 20,
-      h: vh - MENUBAR_H - DOCK_H - 18,
+      h: vh - MENUBAR_H - dockH() - 18,
       x: 10,
       y: MENUBAR_H + 10,
     })
