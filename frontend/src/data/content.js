@@ -23,7 +23,6 @@ export const owner = {
   ],
   links: [
     { label: 'Instagram', href: 'https://instagram.com/diegociborro' },
-    { label: 'GitHub', href: 'https://github.com/' },
     { label: 'LinkedIn', href: 'https://www.linkedin.com/in/diego-ciborro-4812183a2/' },
     { label: 'Email', href: 'mailto:diegociborro99@gmail.com' },
   ],
