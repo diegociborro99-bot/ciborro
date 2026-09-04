@@ -20,7 +20,7 @@ import HerdGame from './apps/HerdGame'
 import Notes from './apps/Notes'
 import Terminal from './apps/Terminal'
 
-import { useWindows, snapRect, DOCK_H } from './hooks/useWindows'
+import { useWindows, snapRect, DOCK_H, MENUBAR_H } from './hooks/useWindows'
 import { useContent } from './lib/content'
 import {
   IconGallery,
@@ -91,6 +91,10 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     localStorage.setItem('theme', theme)
+    // el cromo del navegador va con el tema elegido, no con el del sistema, y
+    // el color sale del token para no tener el mismo valor escrito en dos sitios
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()
   }, [theme])
 
   useEffect(() => {
@@ -98,6 +102,8 @@ export default function App() {
   }, [cat])
 
   const topWin = useMemo(() => wins.filter((w) => !w.minimized).sort((a, b) => b.z - a.z)[0], [wins])
+  // lienzo desnudo: nada abierto, ni siquiera minimizado en el dock
+  const bare = !topWin
 
   /* — abrir una foto desde cualquier sitio — */
   const openPhoto = useCallback(
@@ -387,13 +393,29 @@ export default function App() {
     >
       <Wallpaper />
 
-      {/* firma de fondo */}
-      <div className="pointer-events-none absolute inset-0 grid place-items-center px-6">
-        <div
-          className="text-center"
-          style={{ opacity: booting ? 0 : 0.13, transition: 'opacity 1.6s var(--ease) .3s' }}
-        >
-          <Handwriting text={owner.greeting} height={112} color="var(--tx)" strokeWidth={8} delay={0.6} />
+      {/* Firma de fondo. Con todo cerrado sube de tono y aparece debajo la única
+          línea que nombra al dock: sin iconos sueltos, el lienzo desnudo tiene
+          que decir de dónde salen las cosas. El desplazamiento centra el bloque
+          en la franja real entre la barra y el dock, no en la ventana. */}
+      <div
+        className="pointer-events-none absolute inset-0 grid place-items-center px-6"
+        style={{ paddingBottom: DOCK_H - MENUBAR_H }}
+      >
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div style={{ opacity: booting ? 0 : bare ? 0.4 : 0.13, transition: 'opacity .9s var(--ease) .2s' }}>
+            <Handwriting text={owner.greeting} height={112} color="var(--tx)" strokeWidth={8} delay={0.6} />
+          </div>
+          <p
+            className="label"
+            style={{
+              color: 'var(--tx-2)',
+              textShadow: '0 1px 3px var(--halo)',
+              opacity: booting || !bare ? 0 : 0.9,
+              transition: 'opacity .5s var(--ease)',
+            }}
+          >
+            todo se abre desde el dock
+          </p>
         </div>
       </div>
 

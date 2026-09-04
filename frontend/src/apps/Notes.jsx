@@ -28,8 +28,12 @@ export default function Notes() {
       </Block>
 
       <Block n="03" title="El escritorio">
+        <p>
+          No hay iconos sueltos en el escritorio: todo se abre desde el dock, con las teclas 1–7 o desde
+          el buscador.
+        </p>
         <ul className="mt-2 space-y-1.5">
-          <Row k="Doble clic">en un icono del escritorio, abrir</Row>
+          <Row k="Dock">todas las apps; el punto dice cuál tienes delante</Row>
           <Row k="Botón dcho.">menú del escritorio</Row>
           <Row k="Arrastrar">al borde izquierdo o derecho, media pantalla; arriba, completa</Row>
           <Row k="Bordes">tirar de cualquier lado o esquina para redimensionar</Row>

@@ -25,7 +25,7 @@
   /* texto */
   --tx: #f0ece4;
   --tx-2: #a39c90;
-  --tx-3: #6d675e;
+  --tx-3: #8e877b;
 
   /* líneas y acento */
   --line: rgba(240, 236, 228, 0.09);
@@ -42,8 +42,17 @@
   --shadow-win: 0 1px 2px rgba(0, 0, 0, 0.4), 0 22px 60px -14px rgba(0, 0, 0, 0.78);
   --shadow-flat: 0 8px 26px -14px rgba(0, 0, 0, 0.7);
   --shadow-pop: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 44px -12px rgba(0, 0, 0, 0.6);
-  /* halo bajo el texto de los iconos del escritorio y bajo el gato */
+  /* halo bajo el texto suelto sobre el fondo, y bajo el gato */
   --halo: rgba(0, 0, 0, 0.55);
+
+  /* estados y capas del fondo, que antes iban a pelo en los componentes */
+  --danger: #d98b7f;
+  --win-close: #d4685c;
+  --win-min: #d6ab55;
+  --win-max: #79ad72;
+  --vignette: rgba(0, 0, 0, 0.28);
+  --glow: color-mix(in srgb, var(--tx) 6%, transparent);
+  --mark-mix: 88%;
 }
 
 :root[data-theme='light'] {
@@ -55,18 +64,25 @@
   --panel-3: #e8e2d7;
   --chrome: rgba(251, 249, 245, 0.76);
   --tx: #1c1a17;
-  --tx-2: #6a635a;
-  --tx-3: #968f84;
+  --tx-2: #5d564c;
+  --tx-3: #6f695e;
   --line: rgba(28, 26, 23, 0.1);
   --line-2: rgba(28, 26, 23, 0.19);
-  --accent: #a4661a;
-  --accent-2: #4d7276;
-  --accent-soft: rgba(164, 102, 26, 0.12);
+  --accent: #8d5713;
+  --accent-2: #3f6165;
+  --accent-soft: rgba(141, 87, 19, 0.12);
   --accent-ink: #fdfaf4;
   --shadow-win: 0 1px 2px rgba(60, 50, 35, 0.1), 0 20px 55px -16px rgba(60, 50, 35, 0.42);
   --shadow-flat: 0 8px 24px -14px rgba(60, 50, 35, 0.4);
   --shadow-pop: 0 1px 2px rgba(60, 50, 35, 0.08), 0 14px 40px -12px rgba(60, 50, 35, 0.32);
   --halo: rgba(255, 253, 248, 0.85);
+  --danger: #9c3b2c;
+  --win-close: #c1503f;
+  --win-min: #9d7418;
+  --win-max: #4f8347;
+  --vignette: rgba(60, 50, 35, 0.16);
+  --glow: color-mix(in srgb, var(--panel) 55%, transparent);
+  --mark-mix: 44%;
 }
 
 * {
@@ -344,5 +360,10 @@ input[type='range']::-moz-range-thumb {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    /* Sin esto, quien pide menos movimiento se comía la espera igual: las
+       animaciones desaparecían pero sus retardos no (2,4 s en blanco en «Sobre
+       mí», medio segundo escalonado en la rejilla). */
+    animation-delay: 0.01ms !important;
+    transition-delay: 0.01ms !important;
   }
 }
