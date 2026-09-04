@@ -37,18 +37,25 @@ import {
   IconMoon,
 } from './icons/Icons'
 
-/* Definición de las apps: geometría inicial, icono y título. */
+/* Definición de las apps: tamaño, mínimos, icono y título. Dónde nace cada una
+   ya no se escribe aquí: la coloca el gestor, centrada en horizontal y
+   escalonada por anchura en vertical, que es el único que sabe cuánto sitio hay
+   y qué más está abierto. Las viejas `x` fraccionales (0.13, 0.72…) eran el
+   BORDE IZQUIERDO, y por eso Fotos nacía al 13 % del ancho con media pantalla
+   vacía a la derecha: eran exactamente lo que escoraba las ventanas. */
 const APPS = {
-  gallery:  { title: 'Fotos',                icon: IconGallery,  w: 640, h: 570, x: 0.13, y: 88,  minW: 320, minH: 300 },
-  about:    { title: 'Sobre mí',             icon: IconAbout,    w: 560, h: 480, x: 0.45, y: 132, minW: 340, minH: 280 },
-  projects: { title: 'Otras cosas',          icon: IconProjects, w: 600, h: 430, x: 0.30, y: 320, minW: 360, minH: 240 },
-  music:    { title: 'Música',               icon: IconMusic,    w: 318, h: 522, x: 0.72, y: 84,  minW: 300, minH: 500 },
-  game:     { title: 'Pastorea a los gatos', icon: IconGame,     w: 540, h: 450, x: 0.34, y: 160, minW: 380, minH: 320 },
-  terminal: { title: 'Consola',              icon: IconTerminal, w: 560, h: 400, x: 0.24, y: 380, minW: 340, minH: 220 },
-  notes:    { title: 'Léeme',                icon: IconNotes,    w: 520, h: 510, x: 0.50, y: 120, minW: 340, minH: 280 },
+  gallery:  { title: 'Fotos',                icon: IconGallery,  w: 640, h: 570, minW: 320, minH: 300 },
+  about:    { title: 'Sobre mí',             icon: IconAbout,    w: 560, h: 480, minW: 340, minH: 280 },
+  projects: { title: 'Otras cosas',          icon: IconProjects, w: 600, h: 430, minW: 360, minH: 240 },
+  music:    { title: 'Música',               icon: IconMusic,    w: 318, h: 522, minW: 300, minH: 500 },
+  game:     { title: 'Pastorea a los gatos', icon: IconGame,     w: 540, h: 450, minW: 380, minH: 320 },
+  terminal: { title: 'Consola',              icon: IconTerminal, w: 560, h: 400, minW: 340, minH: 220 },
+  notes:    { title: 'Léeme',                icon: IconNotes,    w: 520, h: 510, minW: 340, minH: 280 },
 }
 
-const ORDER = ['gallery', 'about', 'projects', 'music', 'game', 'terminal', 'notes']
+/* El orden del dock y el de las teclas 1..7 sale de las propias claves: eran
+   dos listas con los mismos siete nombres y nada obligaba a que coincidieran. */
+const ORDER = Object.keys(APPS)
 
 /** Nombres para la URL, para poder enlazar una foto o una app concreta. */
 const SLUG = {
