@@ -7,7 +7,6 @@ import Cat from './components/Cat'
 import Handwriting from './components/Handwriting'
 import Wallpaper from './components/Wallpaper'
 import Boot from './components/Boot'
-import DesktopIcons from './components/DesktopIcons'
 import ContextMenu from './components/ContextMenu'
 import CommandPalette from './components/CommandPalette'
 import Toasts, { useToasts } from './components/Toasts'
@@ -396,11 +395,6 @@ export default function App() {
         >
           <Handwriting text={owner.greeting} height={112} color="var(--tx)" strokeWidth={8} delay={0.6} />
         </div>
-      </div>
-
-      {/* en pantallas estrechas las ventanas ocupan todo: los iconos sobran */}
-      <div className="hidden md:block">
-        <DesktopIcons onOpenApp={open} onOpenPhoto={openPhoto} />
       </div>
 
       <MenuBar

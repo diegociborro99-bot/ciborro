@@ -14,7 +14,6 @@ const fallback = {
   photos: seed.photos,
   projects: seed.projects,
   tracks: seed.tracks,
-  desktop: seed.desktop,
   clocks: seed.clocks,
   live: false,
 }
@@ -43,7 +42,6 @@ export function ContentProvider({ children }) {
           photos: json.photos?.length ? json.photos : seed.photos,
           projects: json.projects?.length ? json.projects : seed.projects,
           tracks: json.tracks?.length ? json.tracks : seed.tracks,
-          desktop: json.desktop?.length ? json.desktop : seed.desktop,
           clocks: json.clocks?.length ? json.clocks : seed.clocks,
           live: true,
         })

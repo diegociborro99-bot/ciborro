@@ -90,20 +90,9 @@ export const tracks = [
   { title: 'Vuelta a casa',   artist: 'Sin acreditar', dur: 198, src: null },
 ]
 
-/**
- * ESCRITORIO
- * ──────────
- * Lo que aparece suelto en el escritorio, a la izquierda. Son *documentos*,
- * no aplicaciones: las apps ya están en el dock, y repetirlas ahí sobra.
- *   { kind: 'doc',   name, opens }  → abre esa app
- *   { kind: 'photo', id }           → abre esa foto en el visor
- */
-export const desktop = [
-  { kind: 'doc', name: 'sobre-mi.txt', opens: 'about' },
-  { kind: 'doc', name: 'leeme.txt', opens: 'notes' },
-  { kind: 'photo', id: 'p1' },
-  { kind: 'photo', id: 'p5' },
-]
+/* El escritorio arranca vacío a propósito: sólo fondo y firma. Todo se abre
+   desde el dock. Antes había iconos sueltos aquí, pero eran lanzadores
+   repetidos de apps que ya estaban abajo. */
 
 /** Relojes de la barra superior. El primero es el tuyo. */
 export const clocks = [

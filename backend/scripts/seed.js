@@ -8,11 +8,11 @@ import { db, schema } from '../src/db/index.js'
  *   node scripts/seed.js
  */
 
-const { owner, photos, projects, tracks, desktop, clocks } = await import(
+const { owner, photos, projects, tracks, clocks } = await import(
   '../../frontend/src/data/content.js'
 )
 
-for (const [key, value] of Object.entries({ owner, desktop, clocks })) {
+for (const [key, value] of Object.entries({ owner, clocks })) {
   await db
     .insert(schema.settings)
     .values({ key, value })
