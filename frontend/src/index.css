@@ -154,6 +154,31 @@ textarea:focus-visible {
   -webkit-backdrop-filter: blur(22px) saturate(160%);
 }
 
+/* Fichas del dock. En CSS y no en el style en línea del componente porque la
+   magnificación —que era la única respuesta al ratón que tenía el dock— se
+   apaga en táctil y con movimiento reducido, y entonces el dock se quedaba
+   inerte. El orden importa: activa gana a hover, y pulsar gana a todo. */
+.dock-tile {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--tx);
+}
+.dock-slot:hover .dock-tile,
+.dock-slot:focus-visible .dock-tile {
+  background: var(--panel-3);
+  border-color: var(--line-2);
+}
+.dock-slot[data-active] .dock-tile {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.dock-slot:active .dock-tile {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
 .label {
   font-size: 10px;
   font-weight: 500;

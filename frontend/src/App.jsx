@@ -510,7 +510,7 @@ export default function App() {
             onClick={() => setPalette(true)}
             title="Buscar  ⌘K"
             aria-label="Buscar"
-            className="grid h-9 w-9 place-items-center rounded-[13px] transition-colors duration-200 sm:h-10 sm:w-10"
+            className="grid h-8 w-8 place-items-center rounded-[13px] transition-colors duration-200 sm:h-10 sm:w-10"
             style={{ background: 'var(--panel-2)', border: '1px solid var(--line)', color: 'var(--tx-2)' }}
           >
             <IconSearch size={18} />

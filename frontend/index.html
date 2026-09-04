@@ -14,12 +14,20 @@
          A partir de ahí lo mantiene al día el efecto de tema de App.jsx. -->
     <meta name="theme-color" content="#100f0d" />
 
-    <!-- cómo se ve al compartir el enlace -->
+    <!-- Cómo se ve al compartir el enlace. Único sitio del proyecto donde la URL
+         va absoluta: estas etiquetas no las resuelve el navegador sino un
+         servidor ajeno, y los rastreadores descartan la relativa sin avisar.
+         No contradice el `base: './'` de vite.config.js por lo mismo. -->
+    <link rel="canonical" href="https://www.ciborro.es/" />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="degos space" />
+    <meta property="og:url" content="https://www.ciborro.es/" />
     <meta property="og:title" content="degos space" />
     <meta property="og:description" content="Fotos y cosas que construyo, en forma de escritorio." />
-    <meta property="og:image" content="./icon-512.png" />
+    <meta property="og:image" content="https://www.ciborro.es/icon-512.png" />
+    <meta property="og:image:alt" content="El gato de degos space" />
     <meta name="twitter:card" content="summary" />
+    <meta name="twitter:image" content="https://www.ciborro.es/icon-512.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
