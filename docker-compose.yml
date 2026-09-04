@@ -1,0 +1,25 @@
+# Postgres para trastear en local. Las fotos siguen yendo a R2.
+#
+#   docker compose up -d
+#   cd backend && npm install && npm run db:migrate && npm run db:seed && npm run dev
+#
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: escritorio
+      POSTGRES_PASSWORD: escritorio
+      POSTGRES_DB: escritorio
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U escritorio']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

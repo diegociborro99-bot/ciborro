@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Escritorio · admin</title>
+<style>
+  :root{
+    color-scheme:dark;
+    --bg:#100f0d; --panel:#1a1815; --panel2:#221f1b;
+    --tx:#f0ece4; --tx2:#a39c90; --tx3:#6d675e;
+    --line:rgba(240,236,228,.1); --line2:rgba(240,236,228,.18);
+    --accent:#e0a355; --ink:#12100c; --bad:#d4685c;
+    --ease:cubic-bezier(.4,0,.2,1);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+    font:15px/1.55 ui-sans-serif,system-ui,-apple-system,sans-serif}
+  a{color:var(--accent)}
+  .wrap{max-width:1020px;margin:0 auto;padding:38px 20px 90px}
+  h1{font-size:26px;margin:0 0 4px;font-weight:500;letter-spacing:-.02em}
+  .sub{color:var(--tx3);font-size:12.5px;margin:0 0 22px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+  label{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--tx3);margin:0 0 6px}
+  input,select{width:100%;padding:10px 12px;border-radius:9px;background:var(--panel2);
+    border:1px solid var(--line2);color:var(--tx);font:inherit;font-size:14px}
+  input:focus{outline:2px solid var(--accent);outline-offset:1px}
+  button{font:inherit;font-size:14px;border:0;border-radius:9px;padding:10px 18px;cursor:pointer;
+    background:var(--accent);color:var(--ink);font-weight:500;transition:transform .15s var(--ease)}
+  button:hover:not(:disabled){transform:translateY(-1px)}
+  button:disabled{opacity:.45;cursor:default;transform:none}
+  button.ghost{background:transparent;color:var(--tx2);border:1px solid var(--line2);font-weight:400}
+  button.danger{background:transparent;color:var(--bad);border:1px solid var(--line2);font-weight:400;padding:6px 11px;font-size:12.5px}
+  .row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:4px 9px;border-radius:999px;
+    border:1px solid var(--line2);color:var(--tx2)}
+  .badge b{font-weight:500;color:var(--tx)}
+  .warn{margin:14px 0 0;padding:11px 13px;border-radius:10px;font-size:12.5px;line-height:1.55;
+    background:rgba(212,104,92,.09);border:1px solid rgba(212,104,92,.3);color:#e9a79e}
+
+  .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));margin-top:16px}
+  .photo{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    transition:border-color .15s var(--ease),opacity .15s var(--ease)}
+  .photo.drag{opacity:.35}
+  .photo.over{border-color:var(--accent)}
+  .thumb{position:relative;display:block;width:100%;aspect-ratio:1;background:var(--panel2) center/cover}
+  .thumb img{display:block;width:100%;height:100%;object-fit:cover}
+  .thumb .none{position:absolute;inset:0;display:grid;place-items:center;text-align:center;
+    font-size:11.5px;color:var(--tx3);padding:10px;line-height:1.5}
+  .handle{position:absolute;top:7px;left:7px;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;
+    background:rgba(16,15,13,.72);color:var(--tx2);cursor:grab;font-size:12px;backdrop-filter:blur(6px)}
+  .n{position:absolute;top:7px;right:7px;font-size:10.5px;padding:2px 7px;border-radius:999px;
+    background:rgba(16,15,13,.72);color:var(--tx2);backdrop-filter:blur(6px);font-variant-numeric:tabular-nums}
+  .photo .meta{padding:11px 12px}
+  .photo input{padding:6px 8px;font-size:12.5px;margin-bottom:6px}
+  .bar{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:var(--tx3)}
+  .drop{border:1.5px dashed var(--line2);border-radius:14px;padding:34px;text-align:center;color:var(--tx2);
+    transition:border-color .2s var(--ease),background .2s var(--ease)}
+  .drop.hot{border-color:var(--accent);background:rgba(224,163,85,.07)}
+  .prog{height:3px;border-radius:999px;background:var(--panel2);overflow:hidden;margin-top:14px}
+  .prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s var(--ease)}
+  .log{margin-top:12px;font:12.5px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--tx2);
+    max-height:220px;overflow:auto;white-space:pre-wrap}
+  .err{color:var(--bad)}
+  .ok{color:var(--accent)}
+  .hide{display:none!important}
+  .sticky{position:sticky;bottom:14px;margin-top:18px;display:flex;justify-content:center}
+  .sticky div{display:flex;gap:8px;padding:8px;border-radius:12px;background:rgba(26,24,21,.92);
+    border:1px solid var(--line2);backdrop-filter:blur(10px);box-shadow:0 12px 40px -12px #000}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Escritorio · admin</h1>
+  <p class="sub">Subir fotos, editar sus fichas y ordenar la galería.</p>
+
+  <!-- entrar -->
+  <section id="login" class="card hide">
+    <div class="row">
+      <div style="flex:1;min-width:220px">
+        <label for="pw">Contraseña</label>
+        <input id="pw" type="password" autocomplete="current-password">
+      </div>
+      <button id="go">Entrar</button>
+    </div>
+    <p id="loginErr" class="log err"></p>
+  </section>
+
+  <!-- panel -->
+  <section id="panel" class="hide">
+    <div class="card">
+      <div id="drop" class="drop">
+        <strong>Arrastra aquí tus fotos</strong><br>
+        <span style="font-size:13px">o <label for="file" style="display:inline;text-transform:none;letter-spacing:0;font-size:13px;color:var(--accent);cursor:pointer">elígelas</label>.
+        JPEG, PNG, TIFF o WebP. De cada una salen seis anchos en tres formatos.</span>
+        <input id="file" type="file" accept="image/*" multiple class="hide">
+      </div>
+      <div class="prog hide" id="progBox"><i id="prog"></i></div>
+      <div id="log" class="log"></div>
+      <div id="storage" style="margin-top:14px"></div>
+    </div>
+
+    <div class="bar" style="margin:26px 0 0">
+      <span id="count"></span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="ghost" id="clean">Borrar las que no tienen archivo</button>
+        <button class="ghost" id="logout">Salir</button>
+      </div>
+    </div>
+
+    <div id="grid" class="grid"></div>
+
+    <div class="sticky hide" id="saveBar">
+      <div>
+        <button id="save">Guardar</button>
+        <button class="ghost" id="undo">Descartar</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+const $ = (s) => document.querySelector(s)
+const api = (p, o) => fetch(p, { credentials: 'same-origin', ...o })
+const esc = (s) => String(s ?? '').replace(/"/g, '&quot;')
+const log = (msg, cls = '') => {
+  const el = document.createElement('div')
+  el.className = cls
+  el.textContent = msg
+  $('#log').prepend(el)
+}
+
+let photos = []
+let order = []       // ids en el orden que se está viendo
+let dirty = false
+
+const touch = () => { dirty = true; $('#saveBar').classList.remove('hide') }
+
+async function boot() {
+  const me = await api('/api/admin/me')
+  if (!me.ok) return $('#login').classList.remove('hide')
+
+  const info = await me.json()
+  $('#panel').classList.remove('hide')
+  $('#storage').innerHTML =
+    `<span class="badge">Fotos en <b>${info.storage === 'r2' ? 'Cloudflare R2' : 'el disco del servidor'}</b> · ${esc(info.bucket)}</span>` +
+    `<span class="badge" style="margin-left:6px">Máx. <b>${info.maxUploadMb} MB</b> por archivo</span>` +
+    (info.storage === 'r2' ? '' :
+      `<div class="warn">Las fotos se están guardando en el disco del servidor. En Railway ese disco se borra
+       en cada despliegue salvo que le montes un volumen. Para un portfolio de verdad, pon las claves de R2.</div>`)
+  await load()
+}
+
+$('#go').onclick = async () => {
+  $('#loginErr').textContent = ''
+  const r = await api('/api/admin/login', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ password: $('#pw').value }),
+  })
+  if (r.ok) location.reload()
+  else $('#loginErr').textContent = (await r.json().catch(() => ({}))).error ?? 'No ha entrado'
+}
+$('#pw').onkeydown = (e) => e.key === 'Enter' && $('#go').click()
+$('#logout').onclick = async () => { await api('/api/admin/logout', { method: 'POST' }); location.reload() }
+
+async function load() {
+  photos = await (await api('/api/admin/photos')).json()
+  order = photos.map((p) => p.id)
+  dirty = false
+  $('#saveBar').classList.add('hide')
+  const sinArchivo = photos.filter((p) => !p.variants).length
+  $('#count').textContent =
+    `${photos.length} fotos` + (sinArchivo ? ` · ${sinArchivo} sin archivo` : '')
+  $('#clean').disabled = !sinArchivo
+  render()
+}
+
+function render() {
+  const grid = $('#grid')
+  grid.innerHTML = ''
+  order.forEach((id, i) => {
+    const p = photos.find((x) => x.id === id)
+    const el = document.createElement('div')
+    el.className = 'photo'
+    el.draggable = true
+    el.dataset.id = p.id
+    el.innerHTML = `
+      <div class="thumb" style="${p.lqip ? `background-image:url(${p.lqip})` : ''}">
+        ${p.thumb ? `<img src="${p.thumb}" alt="" loading="lazy">` : '<span class="none">sin archivo<br>(sólo la ficha)</span>'}
+        <span class="handle" title="Arrastra para ordenar">⠿</span>
+        <span class="n">${i + 1}</span>
+      </div>
+      <div class="meta">
+        <input data-id="${p.id}" data-k="title" value="${esc(p.title)}" aria-label="Título">
+        <input data-id="${p.id}" data-k="place" value="${esc(p.place)}" placeholder="Lugar" aria-label="Lugar">
+        <input data-id="${p.id}" data-k="year"  value="${esc(p.year)}"  placeholder="Año" aria-label="Año">
+        <div class="bar" style="margin-top:8px">
+          <span>${p.width ? `${p.width}×${p.height} · ${p.variants} ver.` : '—'}</span>
+          <button class="danger" data-del="${p.id}">Borrar</button>
+        </div>
+      </div>`
+    grid.append(el)
+  })
+}
+
+$('#grid').addEventListener('input', touch)
+
+$('#grid').onclick = async (e) => {
+  const id = e.target.dataset?.del
+  if (!id) return
+  if (!confirm('¿Borrar esta foto y todas sus versiones? No hay vuelta atrás.')) return
+  const r = await api(`/api/admin/photos/${id}`, { method: 'DELETE' })
+  if (r.ok) load()
+}
+
+/* — ordenar arrastrando — */
+let dragId = null
+$('#grid').addEventListener('dragstart', (e) => {
+  const card = e.target.closest('.photo')
+  if (!card) return
+  dragId = card.dataset.id
+  card.classList.add('drag')
+  e.dataTransfer.effectAllowed = 'move'
+})
+$('#grid').addEventListener('dragend', (e) => {
+  e.target.closest('.photo')?.classList.remove('drag')
+  document.querySelectorAll('.photo.over').forEach((n) => n.classList.remove('over'))
+})
+$('#grid').addEventListener('dragover', (e) => {
+  const card = e.target.closest('.photo')
+  if (!card || !dragId || card.dataset.id === dragId) return
+  e.preventDefault()
+  document.querySelectorAll('.photo.over').forEach((n) => n.classList.remove('over'))
+  card.classList.add('over')
+})
+$('#grid').addEventListener('drop', (e) => {
+  const card = e.target.closest('.photo')
+  if (!card || !dragId) return
+  e.preventDefault()
+  const from = order.indexOf(dragId)
+  const to = order.indexOf(card.dataset.id)
+  if (from < 0 || to < 0 || from === to) return
+  // guardamos lo tecleado antes de repintar, o se pierde
+  collect(true)
+  order.splice(to, 0, ...order.splice(from, 1))
+  dragId = null
+  touch()
+  render()
+})
+
+/** Lee los inputs. Con `apply`, además los vuelca en `photos` (repintado). */
+function collect(apply = false) {
+  const byId = {}
+  for (const inp of document.querySelectorAll('#grid input')) {
+    byId[inp.dataset.id] ??= {}
+    byId[inp.dataset.id][inp.dataset.k] = inp.value
+  }
+  if (apply) for (const [id, patch] of Object.entries(byId)) Object.assign(photos.find((p) => p.id === id) ?? {}, patch)
+  return byId
+}
+
+$('#undo').onclick = load
+
+$('#save').onclick = async () => {
+  $('#save').disabled = true
+  const byId = collect()
+  let n = 0
+  for (const [id, patch] of Object.entries(byId)) {
+    const before = photos.find((p) => p.id === id)
+    if (before && Object.entries(patch).every(([k, v]) => String(before[k] ?? '') === v)) continue
+    await api(`/api/admin/photos/${id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(patch),
+    })
+    n++
+  }
+
+  const moved = order.join() !== photos.map((p) => p.id).join()
+  if (moved) {
+    await api('/api/admin/photos/order', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ids: order }),
+    })
+  }
+
+  log(
+    [n ? `${n} ficha${n > 1 ? 's' : ''} guardada${n > 1 ? 's' : ''}` : '', moved ? 'orden guardado' : '']
+      .filter(Boolean).join(' · ') || 'No había nada que guardar.',
+    'ok'
+  )
+  $('#save').disabled = false
+  load()
+}
+
+$('#clean').onclick = async () => {
+  const huerfanas = photos.filter((p) => !p.variants)
+  if (!huerfanas.length) return
+  if (!confirm(`¿Borrar ${huerfanas.length} fichas sin archivo? Son las de ejemplo.`)) return
+  for (const p of huerfanas) await api(`/api/admin/photos/${p.id}`, { method: 'DELETE' })
+  log(`${huerfanas.length} fichas de ejemplo fuera.`, 'ok')
+  load()
+}
+
+/* — subida — */
+const drop = $('#drop')
+;['dragenter', 'dragover'].forEach((t) =>
+  drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('hot') })
+)
+;['dragleave', 'drop'].forEach((t) =>
+  drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('hot') })
+)
+drop.addEventListener('drop', (e) => upload([...e.dataTransfer.files]))
+$('#file').onchange = (e) => upload([...e.target.files])
+
+async function upload(files) {
+  const imgs = files.filter((f) => f.type.startsWith('image/'))
+  if (!imgs.length) return log('Ahí no había ninguna imagen.', 'err')
+
+  $('#progBox').classList.remove('hide')
+  const t0 = Date.now()
+  let hechas = 0
+
+  // de una en una: pasar un 4K a AVIF consume CPU y en paralelo se atraganta
+  for (const [i, f] of imgs.entries()) {
+    log(`[${i + 1}/${imgs.length}] ${f.name} — ${(f.size / 1e6).toFixed(1)} MB, procesando…`)
+    const form = new FormData()
+    form.set('title', f.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '))
+    form.set('file', f)
+    const t = Date.now()
+    const r = await api('/api/admin/photos', { method: 'POST', body: form })
+    const out = await r.json().catch(() => ({}))
+    log(
+      r.ok
+        ? `  ✓ ${f.name} · ${out.width}×${out.height} · ${out.variants} versiones · ${((Date.now() - t) / 1000).toFixed(1)}s`
+        : `  ✗ ${f.name} · ${out.error ?? r.status}`,
+      r.ok ? 'ok' : 'err'
+    )
+    hechas++
+    $('#prog').style.width = `${(hechas / imgs.length) * 100}%`
+  }
+
+  log(`Listo: ${hechas} de ${imgs.length} en ${((Date.now() - t0) / 1000).toFixed(0)}s.`, 'ok')
+  setTimeout(() => { $('#progBox').classList.add('hide'); $('#prog').style.width = '0' }, 1200)
+  load()
+}
+
+addEventListener('beforeunload', (e) => { if (dirty) e.preventDefault() })
+
+boot()
+</script>
+</body>
+</html>

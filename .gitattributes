@@ -1,0 +1,16 @@
+# Finales de línea normalizados: el repo guarda LF y cada uno ve lo suyo.
+* text=auto eol=lf
+
+# Binarios: que git no intente hacer diff ni convertir nada.
+*.gif   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.avif  binary
+*.mp3   binary
+*.woff  binary
+*.woff2 binary
+
+# Los lockfiles ensucian los diffs de las pull requests.
+package-lock.json linguist-generated=true -diff

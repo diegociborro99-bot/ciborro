@@ -1,0 +1,16 @@
+{
+  "name": "escritorio",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Portfolio con forma de escritorio: web, API y panel de fotos",
+  "scripts": {
+    "dev": "npm --prefix backend run dev",
+    "dev:web": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build && rm -rf backend/public && cp -r frontend/dist backend/public",
+    "start": "npm --prefix backend run start",
+    "install:all": "npm --prefix frontend install && npm --prefix backend install",
+    "db:migrate": "npm --prefix backend run db:migrate",
+    "db:seed": "npm --prefix backend run db:seed",
+    "photos:import": "npm --prefix backend run photos:import"
+  }
+}

@@ -1,0 +1,348 @@
+@import 'tailwindcss';
+
+/* ==========================================================================
+   Sistema de diseño — tokens
+   Dos familias: Instrument Serif (display) + DM Sans (interfaz).
+   Un neutro cálido dominante, un acento ámbar y un tono de apoyo frío.
+   ========================================================================== */
+
+@theme {
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* superficies */
+  --bg: #100f0d;
+  --bg-deep: #0a0908;
+  --panel: #1a1815;
+  --panel-2: #221f1b;
+  --panel-3: #2b2722;
+  --chrome: rgba(28, 25, 21, 0.7);
+
+  /* texto */
+  --tx: #f0ece4;
+  --tx-2: #a39c90;
+  --tx-3: #6d675e;
+
+  /* líneas y acento */
+  --line: rgba(240, 236, 228, 0.09);
+  --line-2: rgba(240, 236, 228, 0.17);
+  --accent: #e0a355;
+  --accent-2: #7ea4a8;
+  --accent-soft: rgba(224, 163, 85, 0.14);
+  --accent-ink: #12100c;
+
+  --radius: 14px;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --shadow-win: 0 1px 2px rgba(0, 0, 0, 0.4), 0 22px 60px -14px rgba(0, 0, 0, 0.78);
+  --shadow-flat: 0 8px 26px -14px rgba(0, 0, 0, 0.7);
+  --shadow-pop: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 44px -12px rgba(0, 0, 0, 0.6);
+  /* halo bajo el texto de los iconos del escritorio y bajo el gato */
+  --halo: rgba(0, 0, 0, 0.55);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #e9e4da;
+  --bg-deep: #ddd7ca;
+  --panel: #fbf9f5;
+  --panel-2: #f2eee6;
+  --panel-3: #e8e2d7;
+  --chrome: rgba(251, 249, 245, 0.76);
+  --tx: #1c1a17;
+  --tx-2: #6a635a;
+  --tx-3: #968f84;
+  --line: rgba(28, 26, 23, 0.1);
+  --line-2: rgba(28, 26, 23, 0.19);
+  --accent: #a4661a;
+  --accent-2: #4d7276;
+  --accent-soft: rgba(164, 102, 26, 0.12);
+  --accent-ink: #fdfaf4;
+  --shadow-win: 0 1px 2px rgba(60, 50, 35, 0.1), 0 20px 55px -16px rgba(60, 50, 35, 0.42);
+  --shadow-flat: 0 8px 24px -14px rgba(60, 50, 35, 0.4);
+  --shadow-pop: 0 1px 2px rgba(60, 50, 35, 0.08), 0 14px 40px -12px rgba(60, 50, 35, 0.32);
+  --halo: rgba(255, 253, 248, 0.85);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--tx);
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 5px;
+}
+
+/* en los campos de texto basta el cursor: el anillo sólo estorba */
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
+/* barras de desplazamiento discretas ------------------------------------ */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+}
+.scroll-thin::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 99px;
+  border: 2.5px solid transparent;
+  background-clip: padding-box;
+}
+.scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--tx-3);
+  background-clip: padding-box;
+  border: 2.5px solid transparent;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* utilidades ------------------------------------------------------------ */
+.chrome-blur {
+  background: var(--chrome);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+}
+
+.label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+}
+
+.serif {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* control deslizante ---------------------------------------------------- */
+input[type='range'] {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 99px;
+  background: var(--tx);
+  border: none;
+  transition: transform 0.2s var(--ease);
+}
+input[type='range']:hover::-webkit-slider-thumb {
+  transform: scale(1.18);
+}
+input[type='range']::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 99px;
+  background: var(--tx);
+}
+
+/* ==========================================================================
+   Animaciones
+   Se animan `translate`, `scale` y `rotate` como propiedades independientes
+   para no pisar el `transform` que posiciona las ventanas ni las utilidades
+   de Tailwind.
+   ========================================================================== */
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+.animate-in {
+  animation: fadeUp 0.55s var(--ease-out) both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.fade-in {
+  animation: fadeIn 0.4s var(--ease) both;
+}
+
+@keyframes winOpen {
+  from {
+    opacity: 0;
+    scale: 0.93;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+/* `backwards` y no `both`: al terminar, la animación suelta `scale` y
+   `opacity`, y las transiciones posteriores (minimizar) vuelven a mandar. */
+.win-open {
+  animation: winOpen 0.3s var(--ease-out) backwards;
+}
+
+@keyframes winClose {
+  to {
+    opacity: 0;
+    scale: 0.94;
+  }
+}
+.win-close {
+  animation: winClose 0.16s var(--ease) forwards;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    scale: 0.96;
+    translate: 0 -6px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+.pop-in {
+  animation: popIn 0.18s var(--ease-out) both;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+    scale: 0.96;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+.toast-in {
+  animation: toastIn 0.32s var(--ease-out) both;
+}
+
+@keyframes drawStroke {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    translate: 100% 0;
+  }
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--panel-2);
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  translate: -100% 0;
+  background: linear-gradient(90deg, transparent, var(--line), transparent);
+  animation: shimmer 1.6s infinite;
+}
+
+@keyframes caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.caret {
+  animation: caret 1.06s steps(1) infinite;
+}
+
+@keyframes driftA {
+  0%,
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+  50% {
+    translate: 4% -3%;
+    scale: 1.12;
+  }
+}
+@keyframes driftB {
+  0%,
+  100% {
+    translate: 0 0;
+    scale: 1.05;
+  }
+  50% {
+    translate: -5% 4%;
+    scale: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

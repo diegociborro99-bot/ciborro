@@ -1,0 +1,167 @@
+import { useEffect, useRef, useState } from 'react'
+import WorldClock from './WorldClock'
+import { useContent } from '../lib/content'
+import { IconSun, IconMoon, IconSearch } from '../icons/Icons'
+
+/** Barra superior: identidad, menús, buscador, reloj mundial y tema. */
+/** Barritas que suben y bajan mientras hay música. */
+function Bars() {
+  return (
+    <span className="flex h-3 shrink-0 items-end gap-[1.5px]" aria-hidden="true">
+      <style>{`@keyframes mbEq{0%,100%{height:25%}50%{height:100%}}`}</style>
+      {[0, 1, 2].map((n) => (
+        <span
+          key={n}
+          className="w-[2px] rounded-full"
+          style={{ background: 'var(--accent)', animation: `mbEq ${0.62 + n * 0.19}s ease-in-out infinite` }}
+        />
+      ))}
+    </span>
+  )
+}
+
+export default function MenuBar({ menus, theme, onToggleTheme, onSearch, nowPlaying, onNowPlaying }) {
+  const { owner } = useContent()
+  const [openMenu, setOpenMenu] = useState(null)
+  const barRef = useRef(null)
+
+  useEffect(() => {
+    if (!openMenu) return
+    const away = (e) => !barRef.current?.contains(e.target) && setOpenMenu(null)
+    const esc = (e) => e.key === 'Escape' && setOpenMenu(null)
+    document.addEventListener('pointerdown', away)
+    document.addEventListener('keydown', esc)
+    return () => {
+      document.removeEventListener('pointerdown', away)
+      document.removeEventListener('keydown', esc)
+    }
+  }, [openMenu])
+
+  return (
+    <header
+      ref={barRef}
+      className="chrome-blur fixed inset-x-0 top-0 z-[9000] flex h-[34px] items-center gap-1 border-b px-2.5 sm:px-3"
+      style={{ borderColor: 'var(--line)' }}
+    >
+      <span className="serif mr-2 shrink-0 pr-1 text-[17px] leading-none sm:text-[18px]" style={{ color: 'var(--tx)' }}>
+        {owner.name.split(' ')[0]}
+        <span style={{ color: 'var(--accent)' }}>.</span>
+      </span>
+
+      <nav className="flex min-w-0 items-center gap-0.5">
+        {menus.map((m) => (
+          <div key={m.label} className="relative">
+            <button
+              type="button"
+              onClick={() => setOpenMenu((v) => (v === m.label ? null : m.label))}
+              onMouseEnter={() => openMenu && setOpenMenu(m.label)}
+              aria-expanded={openMenu === m.label}
+              className="rounded-md px-2 py-1 text-[12.5px] whitespace-nowrap transition-colors duration-150"
+              style={{
+                color: openMenu === m.label ? 'var(--tx)' : 'var(--tx-2)',
+                background: openMenu === m.label ? 'var(--line)' : 'transparent',
+              }}
+            >
+              {m.label}
+            </button>
+
+            {openMenu === m.label && (
+              <div
+                role="menu"
+                className="pop-in absolute top-full left-0 mt-1 w-56 rounded-xl p-1.5"
+                style={{ background: 'var(--panel)', border: '1px solid var(--line-2)', boxShadow: 'var(--shadow-pop)' }}
+              >
+                {m.items.map((it, n) =>
+                  it.sep ? (
+                    <div key={n} className="my-1.5 h-px" style={{ background: 'var(--line)' }} />
+                  ) : (
+                    <button
+                      key={n}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        it.action?.()
+                        setOpenMenu(null)
+                      }}
+                      className="flex w-full items-center justify-between gap-4 rounded-lg px-2.5 py-1.5 text-left text-[13px] transition-colors duration-150"
+                      style={{ color: 'var(--tx)' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-soft)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      {it.label}
+                      {it.hint && (
+                        <kbd className="text-[10.5px]" style={{ color: 'var(--tx-3)' }}>
+                          {it.hint}
+                        </kbd>
+                      )}
+                    </button>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </nav>
+
+      <div className="flex-1" />
+
+      <div className="flex items-center gap-1">
+        {/* lo que está sonando, si está sonando */}
+        {nowPlaying && (
+          <button
+            type="button"
+            onClick={onNowPlaying}
+            title={`${nowPlaying.title} — ${nowPlaying.artist}`}
+            className="fade-in mr-1 hidden max-w-[190px] items-center gap-2 rounded-lg px-2 py-1 text-[11.5px] transition-colors duration-200 md:flex"
+            style={{ color: 'var(--tx-2)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--line)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <Bars />
+            <span className="truncate">{nowPlaying.title}</span>
+          </button>
+        )}
+
+        {/* buscador */}
+        <button
+          type="button"
+          onClick={onSearch}
+          title="Buscar  ⌘K"
+          aria-label="Buscar"
+          className="hidden items-center gap-2 rounded-lg py-1 pr-1.5 pl-2 text-[12px] transition-colors duration-200 sm:flex"
+          style={{ border: '1px solid var(--line)', color: 'var(--tx-3)' }}
+          onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--line-2)')}
+          onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--line)')}
+        >
+          <IconSearch size={12} />
+          <span className="hidden md:inline">Buscar</span>
+          <kbd
+            className="rounded px-1 py-px text-[10px]"
+            style={{ border: '1px solid var(--line)', color: 'var(--tx-3)' }}
+          >
+            ⌘K
+          </kbd>
+        </button>
+
+        <span className="mx-1 hidden text-[11.5px] lg:inline" style={{ color: 'var(--tx-3)' }}>
+          {owner.location}
+        </span>
+
+        <WorldClock />
+
+        <button
+          type="button"
+          onClick={onToggleTheme}
+          aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+          title={theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}
+          className="grid h-7 w-7 place-items-center rounded-md transition-colors duration-200"
+          style={{ color: 'var(--tx-2)' }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--line)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+        >
+          {theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
+        </button>
+      </div>
+    </header>
+  )
+}

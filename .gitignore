@@ -1,0 +1,23 @@
+# dependencias
+node_modules/
+
+# compilados
+dist/
+backend/public/
+
+# secretos — nunca, jamás
+.env
+.env.*
+!.env.example
+
+# fotos guardadas en disco cuando no hay R2
+backend/data/
+fotos-originales/
+
+# sistema y editores
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+.vscode/
+.idea/

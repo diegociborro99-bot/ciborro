@@ -1,0 +1,2 @@
+Copia aquí tus fotos si vas sin backend.
+Luego apunta a ellas desde src/data/content.js:  src: "/photos/tu-archivo.jpg"
