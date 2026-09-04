@@ -83,9 +83,12 @@ export default function App() {
   const { items: toastItems, toast } = useToasts()
   const dockRef = useRef({})
 
+  /* Se arranca sin nada abierto, como un escritorio de verdad: el visitante
+     encuentra el lienzo limpio y decide él qué abrir desde el dock. Un enlace
+     profundo (#fotos/5) sí abre lo suyo, por el efecto de más abajo. */
   const { wins, open, close, closeAll, focus, minimize, toggleMaximize, setGeometry, snap, toggle } = useWindows(
     APPS,
-    window.innerWidth < 780 ? ['gallery'] : ['gallery', 'about']
+    []
   )
 
   useEffect(() => {
