@@ -42,6 +42,15 @@ export default function Gallery({ dense, openIndex, onOpenIndex }) {
     return openIndex !== null && !idx.includes(openIndex) ? photos.map((_, i) => i) : idx
   }, [shown, photos, openIndex])
 
+  /* El escalonado de entrada es un gesto de bienvenida, y sólo tiene gracia la
+     primera vez: al filtrar, retrasa hasta medio segundo unas fotos que ya
+     estaban delante. Pasado el estreno, la rejilla se recompone y ya está. */
+  const [entrada, setEntrada] = useState(true)
+  useEffect(() => {
+    const t = setTimeout(() => setEntrada(false), 1100)
+    return () => clearTimeout(t)
+  }, [])
+
   const target = dense ? 205 : 300
   const cols = Math.max(1, Math.min(4, Math.round(width / target) || 1))
   // ancho real de cada columna: así se pide la versión justa, ni un píxel más
@@ -106,10 +115,10 @@ export default function Gallery({ dense, openIndex, onOpenIndex }) {
                     type="button"
                     onClick={() => onOpenIndex(photos.indexOf(p))}
                     aria-label={`${p.title} — ${p.place}, ${p.year}`}
-                    className="group animate-in relative block w-full overflow-hidden rounded-[10px] text-left transition-[border-color] duration-300"
+                    className={`group relative block w-full overflow-hidden rounded-[10px] text-left transition-[border-color] duration-300 ${entrada ? 'animate-in' : ''}`}
                     style={{
                       aspectRatio: `1 / ${p.ratio}`,
-                      animationDelay: `${Math.min((ci + i * cols) * 42, 520)}ms`,
+                      animationDelay: entrada ? `${Math.min((ci + i * cols) * 42, 520)}ms` : undefined,
                       border: '1px solid var(--line)',
                     }}
                   >
@@ -292,12 +301,24 @@ function Lightbox({ photos, ring, index, onIndex, onClose }) {
 
   // arrastre: desplaza si hay zoom, y si no, cambia de foto al soltar
   const drag = usePointerDrag({
-    onStart: () => ({ pan, moved: 0 }),
+    onStart: (e) => {
+      const el = e.currentTarget
+      el.style.transition = 'none'
+      return { pan, moved: 0, el }
+    },
     onMove: ({ dx, dy, ctx }) => {
       ctx.moved = Math.max(ctx.moved, Math.abs(dx), Math.abs(dy))
-      if (zoom > 1) setPan({ x: ctx.pan.x + dx, y: ctx.pan.y + dy })
+      if (zoom > 1) return setPan({ x: ctx.pan.x + dx, y: ctx.pan.y + dy })
+      /* Sin zoom, la foto sigue al dedo a media velocidad mientras arrastras: el
+         gesto lateral funcionaba, pero no acusaba recibo hasta que la foto ya
+         había cambiado, y se sentía como si no hubiera pasado nada. Se pinta
+         sobre el nodo, sin re-render por fotograma, como en las ventanas. */
+      ctx.el.style.translate = `${dx * 0.45}px 0`
     },
     onEnd: ({ dx, ctx }) => {
+      // vuelve sola a su sitio: si hay cambio de foto, la nueva entra desde cero
+      ctx.el.style.transition = 'translate .22s var(--ease-out)'
+      ctx.el.style.translate = '0 0'
       if (zoom === 1 && Math.abs(dx) > 70) go(dx < 0 ? 1 : -1)
       // un clic acerca, y otro devuelve: antes se entraba al zoom y no se salía
       else if (ctx.moved < 4) setZoom((z) => (z > 1 ? 1 : 2))
