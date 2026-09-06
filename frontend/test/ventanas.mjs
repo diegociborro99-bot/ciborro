@@ -32,10 +32,20 @@ if (!existsSync(path.join(raiz, 'dist', 'index.html'))) {
 
 /* ── el servidor ────────────────────────────────────────────────────── */
 
-const servidor = spawn('npm', ['run', 'preview', '--', '--port', String(PUERTO)], {
-  cwd: raiz,
-  stdio: 'ignore',
-})
+/* --host 127.0.0.1 explícito: por defecto vite escucha en «localhost», que en
+   algunas máquinas —los runners de GitHub, entre otras— resuelve a ::1 antes que
+   a 127.0.0.1, y entonces el servidor está levantado pero nadie lo encuentra.
+   --strictPort para que falle en voz alta en vez de coger otro puerto por su
+   cuenta y dejarnos probando contra la nada. */
+const servidor = spawn(
+  'npm',
+  ['run', 'preview', '--', '--host', '127.0.0.1', '--port', String(PUERTO), '--strictPort'],
+  { cwd: raiz, stdio: ['ignore', 'pipe', 'pipe'] }
+)
+let salida = ''
+servidor.stdout.on('data', (d) => (salida += d))
+servidor.stderr.on('data', (d) => (salida += d))
+
 const apagar = () => servidor.kill('SIGTERM')
 process.on('exit', apagar)
 process.on('SIGINT', () => process.exit(130))
@@ -48,8 +58,9 @@ for (let i = 0; ; i++) {
   } catch {
     /* todavía no */
   }
-  if (i > 60) {
-    console.error('El servidor de preview no arrancó')
+  if (i > 80) {
+    // sin esto se falla a ciegas: el servidor puede haber dicho por qué
+    console.error(`El servidor de preview no contestó en ${URL}\n\nLo que dijo:\n${salida || '(nada)'}`)
     process.exit(1)
   }
   await new Promise((r) => setTimeout(r, 250))
