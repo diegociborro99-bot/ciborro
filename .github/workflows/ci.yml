@@ -1,5 +1,6 @@
-# Comprueba que lo que se sube compila. Nada más: no hay tests todavía, y un CI
-# que finge comprobar cosas es peor que no tenerlo.
+# Comprueba que lo que se sube compila, y que el gestor de ventanas sigue
+# comportándose. Se prueba eso y no el resto a propósito: es la pieza con más
+# estado del proyecto y de donde han salido los fallos que llegaron a producción.
 name: build
 
 on:
@@ -21,6 +22,28 @@ jobs:
       - run: npm ci
         working-directory: frontend
       - run: npm run build
+        working-directory: frontend
+
+  ventanas:
+    name: prueba el gestor de ventanas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      # Sólo Chromium: el sitio no depende del motor y bajar los tres tarda.
+      # La versión va clavada a la de playwright-core en package.json: cada una
+      # espera una revisión concreta del navegador y, si no casan, no lo encuentra.
+      - run: npx --yes playwright@1.63.0 install --with-deps chromium
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+      - run: npm test
         working-directory: frontend
 
   backend:

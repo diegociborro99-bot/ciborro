@@ -121,6 +121,20 @@ npm run dev                              # API + panel  → :3000
 npm run dev:web                          # el escritorio → :5173
 ```
 
+Y para probar el gestor de ventanas, que es la pieza con más estado del
+proyecto y de donde han salido los fallos que llegaron a producción:
+
+```bash
+cd frontend && npm run build && npm test
+```
+
+Levanta el sitio construido en un Chromium de verdad y comprueba dónde nacen las
+ventanas, que ninguna entierre la barra de título de otra, minimizar, maximizar,
+anclar, la memoria entre visitas, la vista general, el móvil y los enlaces
+profundos. No prueba el resto del sitio a propósito: lo demás se ve mirándolo;
+esto no, porque se rompe en la sexta interacción y en el orden concreto en que
+abriste las cosas.
+
 `npm run build` compila el frontend y lo deja en `backend/public`, que es de
 donde lo sirve el servidor; `npm start` levanta el conjunto en un solo puerto.
 
@@ -246,9 +260,10 @@ de R2 viven en las variables de Railway, nunca en el repo. Si alguna vez llegas 
 subir una por error, no basta con borrarla en un commit posterior: hay que rotarla
 en Cloudflare y cambiar `ADMIN_PASSWORD` y `JWT_SECRET`.
 
-Hay CI en `.github/workflows/ci.yml`: en cada push compila el escritorio, revisa
-que el servidor parsea y construye la imagen de Docker. Si el build de Docker
-falla ahí, fallará también en Railway — mejor enterarse antes.
+Hay CI en `.github/workflows/ci.yml`: en cada push compila el escritorio, pasa
+las pruebas del gestor de ventanas, revisa que el servidor parsea y construye la
+imagen de Docker. Si el build de Docker falla ahí, fallará también en Railway —
+mejor enterarse antes.
 
 ## Créditos y licencias
 
