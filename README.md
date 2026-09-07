@@ -93,12 +93,33 @@ Entra en **`https://tu-sitio/admin`** con `ADMIN_PASSWORD` y arrástralas ahí.
 Van de una en una: convertir un 4K a AVIF consume CPU y lanzarlas todas a la vez
 sólo consigue tumbar un contenedor pequeño. Cuenta ~5–10 s por foto.
 
-Si son muchas, desde tu máquina:
+Si son muchas, o pesan, hazlo **desde tu ordenador** y no por el panel:
 
 ```bash
-ADMIN_PASSWORD=… SITE=https://tu-sitio.up.railway.app \
-  node backend/scripts/import-folder.js ~/Fotos/seleccion
+cp .env.example backend/.env      # y pon dentro las claves de R2 y ADMIN_PASSWORD
+SITE=https://www.ciborro.es npm run photos:publish -- ~/Fotos/seleccion
 ```
+
+Ese script hace en tu máquina lo que el panel hace en el servidor —las mismas
+18 variantes y el mismo LQIP, con la misma cadena de imagen—, sube los archivos
+directos a R2 y al servidor sólo le manda un JSON diciendo qué hay. Un 4K que
+en el contenedor tarda 5-10 s aquí tarda uno, no hay tope de tamaño y es
+imposible tumbar el servidor. Va de varias en varias (la mitad de tus núcleos),
+lee el año de la cámara del EXIF, y es idempotente: el id sale del contenido,
+así que relanzarlo sobre la misma carpeta salta las que ya están.
+
+```bash
+npm run photos:publish -- ~/Fotos/lisboa --place Lisboa --year 2025
+npm run photos:publish -- ~/Fotos/seleccion --dry-run     # procesa y cuenta, sin subir
+```
+
+**Qué exportar.** JPEG a calidad 90, lado largo 4000 px, sRGB. Nada de RAW ni
+TIFF: el sitio nunca sirve más de 3840 px, y de la conversión a AVIF y WebP se
+encarga la cadena. Los originales de verdad se quedan en tu disco y tu copia; la
+web no los necesita.
+
+`backend/scripts/import-folder.js` sigue ahí para el otro camino (subir los
+originales y que convierta el servidor), pero para un lote es el lento.
 
 En el panel se editan título, sitio y año, se reordena la galería arrastrando
 las tarjetas, y se borran las fichas de ejemplo de un botón.
