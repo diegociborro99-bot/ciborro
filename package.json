@@ -11,6 +11,7 @@
     "install:all": "npm --prefix frontend install && npm --prefix backend install",
     "db:migrate": "npm --prefix backend run db:migrate",
     "db:seed": "npm --prefix backend run db:seed",
-    "photos:import": "npm --prefix backend run photos:import"
+    "photos:import": "npm --prefix backend run photos:import",
+    "photos:publish": "npm --prefix backend run photos:publish --"
   }
 }

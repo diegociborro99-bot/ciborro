@@ -150,6 +150,68 @@ export default async function adminRoutes(app) {
     return { id, variants: rows.length, width: info.width, height: info.height }
   })
 
+  /**
+   * Registrar una foto ya procesada y subida a R2 desde fuera.
+   *
+   * Es la otra mitad de scripts/publish-photos.js: el script hace en tu
+   * ordenador lo que hace la subida de arriba en el servidor —variantes, LQIP,
+   * subida a R2— y aquí sólo llega el JSON con lo que hay. Así un lote de 4K
+   * no pasa por la CPU del contenedor ni por el tope de subida, y se procesa
+   * a la velocidad de tu máquina.
+   */
+  const registro = z.object({
+    id: z
+      .string()
+      .min(3)
+      .max(80)
+      .regex(/^[a-z0-9-]+$/, 'sólo minúsculas, dígitos y guiones'),
+    title: z.string().min(1).max(120),
+    place: z.string().max(120).default(''),
+    year: z.string().max(20).default(''),
+    ratio: z.number().positive(),
+    width: z.number().int().positive(),
+    height: z.number().int().positive(),
+    lqip: z.string().max(4000).nullable().default(null),
+    variants: z
+      .array(
+        z.object({
+          width: z.number().int().positive(),
+          format: z.enum(['avif', 'webp', 'jpeg']),
+          key: z.string().min(1).max(200),
+          bytes: z.number().int().nonnegative().default(0),
+        })
+      )
+      .min(1)
+      .max(40),
+  })
+
+  app.post('/api/admin/photos/register', { preHandler: auth }, async (req, reply) => {
+    const parsed = registro.safeParse(req.body ?? {})
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Registro inválido', detalle: parsed.error.issues.map((i) => i.message) })
+    }
+    const { variants, ...meta } = parsed.data
+
+    // cada clave tiene que vivir bajo la carpeta de esta foto: nada de registrar
+    // como propias las variantes de otra, o rutas fuera del bucket
+    const raiz = `photos/${meta.id}/`
+    const ajena = variants.find((v) => !v.key.startsWith(raiz) || v.key.includes('..'))
+    if (ajena) return reply.code(400).send({ error: `La clave ${ajena.key} no está bajo ${raiz}` })
+
+    const [existe] = await db.select({ id: schema.photos.id }).from(schema.photos).where(eq(schema.photos.id, meta.id))
+    if (existe) return reply.code(409).send({ error: 'Ya existe', id: meta.id })
+
+    const [{ next } = { next: 0 }] = await db
+      .select({ next: sql`coalesce(max(${schema.photos.sort}), -1) + 1` })
+      .from(schema.photos)
+
+    await db.insert(schema.photos).values({ ...meta, year: meta.year || String(new Date().getFullYear()), sort: Number(next) || 0 })
+    await db.insert(schema.photoVariants).values(
+      variants.map((v) => ({ id: randomUUID(), photoId: meta.id, width: v.width, format: v.format, key: v.key, bytes: v.bytes }))
+    )
+    return { id: meta.id, variants: variants.length }
+  })
+
   app.patch('/api/admin/photos/:id', { preHandler: auth }, async (req, reply) => {
     const patch = photoMeta.parse(req.body ?? {})
     if (!Object.keys(patch).length) return reply.code(400).send({ error: 'Nada que cambiar' })
