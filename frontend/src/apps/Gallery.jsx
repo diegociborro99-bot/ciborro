@@ -252,6 +252,57 @@ function Select({ options, value, onChange, labelAll, count }) {
 function Lightbox({ photos, ring, index, onIndex, onClose }) {
   const p = photos[index]
   const [zoom, setZoom] = useState(1)
+  const boxRef = useRef(null)
+  const [ancho, setAncho] = useState(0)
+
+  /* Zoom «de marco»: crece la caja entera, no la imagen recortada dentro de una
+     caja fija. LLENAR es la escala a la que el marco toca los bordes de la
+     pantalla; offsetWidth ignora los transforms, así que mide la caja en
+     reposo aunque esté ampliada. */
+  const llenar = () => {
+    const el = boxRef.current
+    if (!el) return 2
+    const w = el.offsetWidth
+    const h = el.offsetHeight
+    return Math.max(1.05, Math.min(innerWidth / w, innerHeight / h) * 0.985)
+  }
+  const acotar = (z) => Math.min(llenar() * 2.5, Math.max(1, z))
+  const inmersivo = zoom > 1.02
+
+  /* Ampliada, la foto se centra en la PANTALLA, no en la franja que le dejan
+     cabecera y miniaturas: si no, al llenar asomaba por arriba. Escalar desde el
+     centro no mueve el centro, así que la medida vale a cualquier escala. */
+  // estado y no ref: medido en un efecto, tiene que provocar el render que lo pinta
+  const [centro, setCentro] = useState({ x: 0, y: 0 })
+  useEffect(() => {
+    if (!inmersivo) return
+    const r = boxRef.current?.getBoundingClientRect()
+    if (!r) return
+    setCentro({ x: innerWidth / 2 - (r.left + r.width / 2), y: innerHeight / 2 - (r.top + r.height / 2) })
+  }, [inmersivo])
+  const desplaza = (px, py) => `${px + (inmersivo ? centro.x : 0)}px ${py + (inmersivo ? centro.y : 0)}px`
+  // la misma en React y en el arrastre: si divergen, el zoom deja de animarse
+  const TRANS = 'scale .35s var(--ease-out), translate .3s var(--ease-out)'
+
+  // el ancho en reposo, para que `sizes` pida al navegador la variante justa
+  useEffect(() => {
+    setAncho(boxRef.current?.offsetWidth ?? 0)
+  }, [index])
+
+  /* Rueda del ratón sobre la foto: amplía o reduce. Se registra a mano con
+     passive:false porque hay que impedir el scroll de la página, y React no
+     garantiza que su onWheel lo permita. */
+  useEffect(() => {
+    const el = boxRef.current
+    if (!el) return
+    const onWheel = (e) => {
+      e.preventDefault()
+      setZoom((z) => acotar(z * (e.deltaY < 0 ? 1.15 : 1 / 1.15)))
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index])
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [info, setInfo] = useState(true)
   const [auto, setAuto] = useState(false)
@@ -265,11 +316,12 @@ function Lightbox({ photos, ring, index, onIndex, onClose }) {
 
   useEffect(() => {
     const key = (e) => {
-      if (e.key === 'Escape') onClose()
+      // con la foto ampliada, Esc primero la devuelve; el segundo cierra
+      if (e.key === 'Escape') (zoom > 1 ? setZoom(1) : onClose())
       else if (e.key === 'ArrowRight') go(1)
       else if (e.key === 'ArrowLeft') go(-1)
-      else if (e.key === '+' || e.key === '=') setZoom((z) => Math.min(4, z * 1.4))
-      else if (e.key === '-') setZoom((z) => Math.max(1, z / 1.4))
+      else if (e.key === '+' || e.key === '=') setZoom((z) => acotar(z * 1.4))
+      else if (e.key === '-') setZoom((z) => acotar(z / 1.4))
       else if (e.key === '0') {
         setZoom(1)
         setPan({ x: 0, y: 0 })
@@ -283,7 +335,7 @@ function Lightbox({ photos, ring, index, onIndex, onClose }) {
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onClose])
+  }, [onClose, zoom])
 
   useEffect(() => {
     if (zoom === 1) setPan({ x: 0, y: 0 })
@@ -308,20 +360,25 @@ function Lightbox({ photos, ring, index, onIndex, onClose }) {
     },
     onMove: ({ dx, dy, ctx }) => {
       ctx.moved = Math.max(ctx.moved, Math.abs(dx), Math.abs(dy))
-      if (zoom > 1) return setPan({ x: ctx.pan.x + dx, y: ctx.pan.y + dy })
+      // con zoom, desplazar: pintado sobre el nodo y confirmado al soltar
+      if (zoom > 1) return (ctx.el.style.translate = desplaza(ctx.pan.x + dx, ctx.pan.y + dy))
       /* Sin zoom, la foto sigue al dedo a media velocidad mientras arrastras: el
          gesto lateral funcionaba, pero no acusaba recibo hasta que la foto ya
          había cambiado, y se sentía como si no hubiera pasado nada. Se pinta
          sobre el nodo, sin re-render por fotograma, como en las ventanas. */
       ctx.el.style.translate = `${dx * 0.45}px 0`
     },
-    onEnd: ({ dx, ctx }) => {
+    onEnd: ({ dx, dy, ctx }) => {
+      ctx.el.style.transition = TRANS
+      if (zoom > 1 && ctx.moved >= 4) {
+        // confirmar el desplazamiento; React pintará lo mismo que ya hay
+        return setPan({ x: ctx.pan.x + dx, y: ctx.pan.y + dy })
+      }
       // vuelve sola a su sitio: si hay cambio de foto, la nueva entra desde cero
-      ctx.el.style.transition = 'translate .22s var(--ease-out)'
-      ctx.el.style.translate = '0 0'
+      ctx.el.style.translate = desplaza(0, 0)
       if (zoom === 1 && Math.abs(dx) > 70) go(dx < 0 ? 1 : -1)
-      // un clic acerca, y otro devuelve: antes se entraba al zoom y no se salía
-      else if (ctx.moved < 4) setZoom((z) => (z > 1 ? 1 : 2))
+      // un clic lleva el marco a llenar la pantalla; otro lo devuelve
+      else if (ctx.moved < 4) setZoom((z) => (z > 1 ? 1 : llenar()))
     },
   })
 
@@ -352,14 +409,14 @@ function Lightbox({ photos, ring, index, onIndex, onClose }) {
           {String(at + 1).padStart(2, '0')} / {String(ring.length).padStart(2, '0')}
         </span>
         <div className="flex items-center gap-1">
-          <Round onClick={() => setZoom((z) => Math.max(1, z / 1.4))} label="Alejar" disabled={zoom <= 1}>
+          <Round onClick={() => setZoom((z) => acotar(z / 1.4))} label="Alejar" disabled={zoom <= 1}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="11" cy="11" r="6.6" />
               <path d="m16 16 4.4 4.4M8.4 11h5.2" strokeLinecap="round" />
             </svg>
           </Round>
           <span className="tnum hidden w-11 text-center text-[11.5px] text-white/45 sm:block">{Math.round(zoom * 100)}%</span>
-          <Round onClick={() => setZoom((z) => Math.min(4, z * 1.4))} label="Acercar" disabled={zoom >= 4}>
+          <Round onClick={() => setZoom((z) => acotar(z * 1.4))} label="Acercar" disabled={zoom >= llenar() * 2.5 - 0.01}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="11" cy="11" r="6.6" />
               <path d="m16 16 4.4 4.4M8.4 11h5.2M11 8.4v5.2" strokeLinecap="round" />
@@ -401,11 +458,14 @@ function Lightbox({ photos, ring, index, onIndex, onClose }) {
       )}
 
       <div className="flex min-h-0 flex-1 items-center gap-1 px-2 sm:px-4">
-        <Arrow dir="left" onClick={() => go(-1)} />
+        <div style={{ opacity: inmersivo ? 0 : 1, pointerEvents: inmersivo ? 'none' : undefined, transition: 'opacity .3s var(--ease)' }}>
+          <Arrow dir="left" onClick={() => go(-1)} />
+        </div>
         <figure key={p.id} className="fade-in flex min-h-0 flex-1 flex-col items-center justify-center gap-4">
           <div
             {...drag}
-            className="overflow-hidden rounded-lg touch-none"
+            ref={boxRef}
+            className="rounded-lg touch-none"
             style={{
               /* Alto = lo que deje la ventana, pero nunca más de lo que permite
                  el ancho disponible al ratio de la foto. Los 240 son cabecera,
@@ -418,22 +478,31 @@ function Lightbox({ photos, ring, index, onIndex, onClose }) {
               aspectRatio: `1 / ${p.ratio}`,
               cursor: zoom > 1 ? 'grab' : 'zoom-in',
               boxShadow: '0 30px 80px -30px rgba(0,0,0,.9)',
+              /* La escala y el desplazamiento van en la caja: crece el marco
+                 entero y la foto nunca se recorta. `translate` se aplica en el
+                 espacio del padre, en píxeles de pantalla, así que el arrastre
+                 no hay que corregirlo por el zoom. Por encima de las flechas y
+                 el cromo, que al ampliar se apartan. */
+              scale: String(zoom),
+              translate: desplaza(pan.x, pan.y),
+              transformOrigin: 'center',
+              transition: TRANS,
+              position: 'relative',
+              zIndex: inmersivo ? 5 : undefined,
             }}
           >
             <Photo
               photo={p}
               priority
-              sizes="(max-width: 800px) 96vw, min(90vw, 1600px)"
-              className="h-full w-full"
-              style={{
-                scale: String(zoom),
-                translate: `${pan.x / zoom}px ${pan.y / zoom}px`,
-                transition: 'scale .28s var(--ease-out)',
-              }}
+              /* con el ancho real en píxeles, y multiplicado por el zoom, el
+                 navegador coge la variante que hace falta para verse nítida
+                 ampliada: el zoom enseña detalle, no píxeles */
+              sizes={ancho ? `${Math.round(ancho * zoom)}px` : '(max-width: 800px) 96vw, min(90vw, 1600px)'}
+              className="h-full w-full rounded-lg"
             />
           </div>
 
-          <figcaption className="text-center">
+          <figcaption className="text-center" style={{ opacity: inmersivo ? 0 : 1, pointerEvents: inmersivo ? 'none' : undefined, transition: 'opacity .3s var(--ease)' }}>
             <p className="serif text-[21px] text-white">{p.title}</p>
             {info && (
               <p className="fade-in tnum mt-1 flex items-center justify-center gap-2 text-[11.5px] text-white/45">
@@ -446,10 +515,15 @@ function Lightbox({ photos, ring, index, onIndex, onClose }) {
             )}
           </figcaption>
         </figure>
-        <Arrow dir="right" onClick={() => go(1)} />
+        <div style={{ opacity: inmersivo ? 0 : 1, pointerEvents: inmersivo ? 'none' : undefined, transition: 'opacity .3s var(--ease)' }}>
+          <Arrow dir="right" onClick={() => go(1)} />
+        </div>
       </div>
 
-      <div className="scroll-thin flex shrink-0 justify-start gap-1.5 overflow-x-auto px-4 py-4 sm:justify-center">
+      <div
+        className="scroll-thin flex shrink-0 justify-start gap-1.5 overflow-x-auto px-4 py-4 sm:justify-center"
+        style={{ opacity: inmersivo ? 0 : 1, pointerEvents: inmersivo ? 'none' : undefined, transition: 'opacity .3s var(--ease)' }}
+      >
         {ring.map((i) => photos[i]).map((t, n) => {
           const i = ring[n]
           return (
@@ -474,8 +548,11 @@ function Lightbox({ photos, ring, index, onIndex, onClose }) {
         })}
       </div>
 
-      <p className="hidden pb-3 text-center text-[10.5px] sm:block" style={{ color: 'var(--tx-2)' }}>
-        ← → cambiar · + − zoom · 0 restablecer · I ficha · espacio pase · Esc salir
+      <p
+        className="hidden pb-3 text-center text-[10.5px] sm:block"
+        style={{ color: 'var(--tx-2)', opacity: inmersivo ? 0 : 1, transition: 'opacity .3s var(--ease)' }}
+      >
+        ← → cambiar · clic o rueda: ampliar · + − 0 · I ficha · espacio pase · Esc salir
       </p>
     </div>,
     document.body
