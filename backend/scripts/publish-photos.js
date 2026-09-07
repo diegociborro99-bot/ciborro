@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import sharp from 'sharp'
 import { probe, makeLqip, makeVariants } from '../src/lib/images.js'
-import { put } from '../src/lib/r2.js'
+import { put, removeMany, publicUrl } from '../src/lib/r2.js'
 
 /**
  * Publica una carpeta de fotos haciendo el trabajo pesado AQUÍ, en tu
@@ -24,7 +24,16 @@ import { put } from '../src/lib/r2.js'
  * contraseña del panel. Es idempotente: el id sale del contenido, así que
  * volver a lanzarlo sobre la misma carpeta salta las que ya están.
  *
+ * Entran JPEG, PNG, TIFF, WebP y AVIF. Los RAW (DNG y compañía) NO: no hay
+ * revelado aquí, y si se abriera un DNG como TIFF se publicaría la miniatura
+ * de 320 px que la cámara guarda en el primer IFD. Revélalos y exporta.
+ *
+ * El título sale del que pusiste en Lightroom (XMP dc:title, o la
+ * descripción EXIF); si no hay, del nombre del archivo. El sitio, de la
+ * ciudad del XMP, salvo que lo des con --place. El año, del EXIF.
+ *
  * Opciones:
+ *   --check            comprueba claves, bucket, URL pública y contraseña, sin fotos
  *   --dry-run          procesa y cuenta, pero ni sube ni registra
  *   --concurrency N    fotos a la vez (por defecto, la mitad de tus núcleos)
  *   --place "Gijón"    sitio para todas las de esta tanda
@@ -32,11 +41,12 @@ import { put } from '../src/lib/r2.js'
  */
 
 const args = process.argv.slice(2)
-const opciones = { dryRun: false, concurrency: null, place: null, year: null }
+const opciones = { check: false, dryRun: false, concurrency: null, place: null, year: null }
 let dir = null
 for (let i = 0; i < args.length; i++) {
   const a = args[i]
-  if (a === '--dry-run') opciones.dryRun = true
+  if (a === '--check') opciones.check = true
+  else if (a === '--dry-run') opciones.dryRun = true
   else if (a === '--concurrency') opciones.concurrency = Number(args[++i])
   else if (a === '--place') opciones.place = args[++i] ?? ''
   else if (a === '--year') opciones.year = args[++i] ?? ''
@@ -47,14 +57,16 @@ const concurrency = Math.max(1, opciones.concurrency || Math.max(1, Math.floor(o
 const placeForAll = opciones.place
 const yearForAll = opciones.year
 
-if (!dir) {
+if (!dir && !opciones.check) {
   console.error('Uso: node scripts/publish-photos.js <carpeta> [--dry-run] [--concurrency N] [--place "…"] [--year AAAA]')
+  console.error('     node scripts/publish-photos.js --check        (prueba la configuración sin subir fotos)')
   process.exit(1)
 }
 
 const site = (process.env.SITE ?? 'http://localhost:3000').replace(/\/$/, '')
-if (!dryRun) {
-  for (const k of ['ADMIN_PASSWORD', 'R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET']) {
+const CLAVES = ['ADMIN_PASSWORD', 'R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET']
+if (!dryRun && !opciones.check) {
+  for (const k of CLAVES) {
     if (!process.env[k]) {
       console.error(`Falta ${k}. Ponla en el entorno o en backend/.env (o usa --dry-run para probar sin subir).`)
       process.exit(1)
@@ -75,46 +87,185 @@ const slug = (s) =>
 
 const kb = (n) => `${Math.round(n / 1024)} KB`
 
+const IMAGEN = /\.(jpe?g|png|tiff?|webp|avif)$/i
+const RAW = /\.(dng|rw2|cr2|cr3|nef|nrw|arw|srf|sr2|raf|orf|pef|x3f|3fr|iiq|rwl)$/i
+
 /**
- * El año en que se hizo la foto, leído del EXIF (DateTimeOriginal). Es un
- * recorrido mínimo de los IFD de TIFF: no hace falta una librería para leer
- * una etiqueta. Si no está o no se entiende, se devuelve null y manda el
- * año actual, como en el panel.
+ * Lee una etiqueta de un IFD de TIFF. Es un recorrido mínimo, sin librería:
+ * vale para el bloque EXIF de un JPEG (`tiff` es donde empieza la cabecera
+ * dentro del bloque) y para un TIFF o DNG entero (`tiff` = 0). Devuelve el
+ * texto de una etiqueta ASCII, el valor de una SHORT/LONG, o null.
  */
-function exifYear(exif) {
-  if (!exif || exif.length < 16) return null
-  const tiff = exif.indexOf('II*\0', 0, 'latin1') !== -1 ? exif.indexOf('II*\0', 0, 'latin1') : exif.indexOf('MM\0*', 0, 'latin1')
-  if (tiff === -1 || tiff > 16) return null
-  const le = exif[tiff] === 0x49
-  const u16 = (o) => (le ? exif.readUInt16LE(o) : exif.readUInt16BE(o))
-  const u32 = (o) => (le ? exif.readUInt32LE(o) : exif.readUInt32BE(o))
-  const leer = (ifd, tag) => {
-    if (ifd + 2 > exif.length) return null
-    const n = u16(ifd)
-    for (let i = 0; i < n; i++) {
-      const e = ifd + 2 + i * 12
-      if (e + 12 > exif.length) return null
-      if (u16(e) !== tag) continue
-      const tipo = u16(e + 2)
-      const cuenta = u32(e + 4)
-      if (tipo === 4 || tipo === 3) return u32(e + 8) // LONG/SHORT: el valor va inline
-      if (tipo === 2) {
-        const off = cuenta <= 4 ? e + 8 : tiff + u32(e + 8)
-        return exif.toString('latin1', off, Math.min(off + cuenta, exif.length))
+function tiffTag(buf, tiff, ifd, tag) {
+  const le = buf[tiff] === 0x49
+  const u16 = (o) => (le ? buf.readUInt16LE(o) : buf.readUInt16BE(o))
+  const u32 = (o) => (le ? buf.readUInt32LE(o) : buf.readUInt32BE(o))
+  if (ifd + 2 > buf.length) return null
+  const n = u16(ifd)
+  for (let i = 0; i < n; i++) {
+    const e = ifd + 2 + i * 12
+    if (e + 12 > buf.length) return null
+    if (u16(e) !== tag) continue
+    const tipo = u16(e + 2)
+    const cuenta = u32(e + 4)
+    if (tipo === 4) return u32(e + 8)
+    if (tipo === 3) return u16(e + 8)
+    if (tipo === 1 || tipo === 2) {
+      const off = cuenta <= 4 ? e + 8 : tiff + u32(e + 8)
+      const raw = buf.subarray(off, Math.min(off + cuenta, buf.length))
+      if (tipo !== 2) return raw.toString('latin1')
+      // el EXIF dice ASCII, pero Lightroom escribe UTF-8 y hay cámaras que escriben Latin-1
+      let s
+      try {
+        s = new TextDecoder('utf-8', { fatal: true }).decode(raw)
+      } catch {
+        s = raw.toString('latin1')
       }
-      return null
+      return s.replace(/\0+$/, '').trim()
     }
     return null
   }
+  return null
+}
+
+/** Dónde empieza la cabecera TIFF (II*\0 o MM\0*) dentro de un bloque, o -1. */
+function tiffStart(buf) {
+  const ii = buf.indexOf('II*\0', 0, 'latin1')
+  const mm = buf.indexOf('MM\0*', 0, 'latin1')
+  const at = ii === -1 ? mm : mm === -1 ? ii : Math.min(ii, mm)
+  return at > 16 ? -1 : at
+}
+
+function ifd0(buf, tiff) {
+  const le = buf[tiff] === 0x49
+  return tiff + (le ? buf.readUInt32LE(tiff + 4) : buf.readUInt32BE(tiff + 4))
+}
+
+/**
+ * El año en que se hizo la foto, leído del EXIF (DateTimeOriginal). Si no
+ * está o no se entiende, null, y manda el año actual, como en el panel.
+ */
+function exifYear(exif) {
+  if (!exif || exif.length < 16) return null
   try {
-    const ifd0 = tiff + u32(tiff + 4)
-    const exifIfd = leer(ifd0, 0x8769)
-    const fecha = (exifIfd != null && leer(tiff + exifIfd, 0x9003)) || leer(ifd0, 0x0132)
+    const tiff = tiffStart(exif)
+    if (tiff === -1) return null
+    const i0 = ifd0(exif, tiff)
+    const exifIfd = tiffTag(exif, tiff, i0, 0x8769)
+    const fecha = (typeof exifIfd === 'number' && tiffTag(exif, tiff, tiff + exifIfd, 0x9003)) || tiffTag(exif, tiff, i0, 0x0132)
     const m = typeof fecha === 'string' && fecha.match(/^(\d{4}):/)
     return m ? m[1] : null
   } catch {
     return null
   }
+}
+
+/** La descripción EXIF (ImageDescription), que es donde Lightroom pone el pie. */
+function exifDescription(exif) {
+  if (!exif || exif.length < 16) return null
+  try {
+    const tiff = tiffStart(exif)
+    if (tiff === -1) return null
+    const s = tiffTag(exif, tiff, ifd0(exif, tiff), 0x010e)
+    return typeof s === 'string' && s ? s : null
+  } catch {
+    return null
+  }
+}
+
+/** Un TIFF que en realidad es un DNG: lleva la etiqueta DNGVersion en el IFD0. */
+function esDng(buf) {
+  try {
+    if (buf.length < 16 || tiffStart(buf) !== 0) return false
+    return tiffTag(buf, 0, ifd0(buf, 0), 0xc612) != null
+  } catch {
+    return false
+  }
+}
+
+const desxml = (s) =>
+  s
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n))
+    .replace(/&amp;/g, '&')
+    .trim()
+
+/** Lo que Lightroom escribe en el XMP: título (dc:title) y ciudad (photoshop:City). */
+function xmpCampos(xmp) {
+  if (!xmp) return {}
+  const s = xmp.toString('utf8')
+  const title = s.match(/<dc:title>[\s\S]*?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>/)?.[1]
+  const city = s.match(/photoshop:City="([^"]*)"/)?.[1] ?? s.match(/<photoshop:City>([\s\S]*?)<\/photoshop:City>/)?.[1]
+  return { title: title ? desxml(title) : null, city: city ? desxml(city) : null }
+}
+
+/* ── --check: la configuración, sin fotos ───────────────────────────── */
+
+if (opciones.check) {
+  let mal = 0
+  const ok = (que, detalle = '') => console.log(`  ✓ ${que}${detalle ? ` · ${detalle}` : ''}`)
+  const ko = (que, detalle = '') => {
+    mal++
+    console.log(`  ✗ ${que}${detalle ? ` · ${detalle}` : ''}`)
+  }
+  console.log(`Comprobando la configuración para ${site}\n`)
+
+  for (const k of CLAVES) process.env[k] ? ok(k) : ko(k, 'falta')
+  if (!process.env.R2_PUBLIC_URL) ko('R2_PUBLIC_URL', 'falta: el script no la necesita, pero el servidor sí para montar las URLs')
+  else ok('R2_PUBLIC_URL', process.env.R2_PUBLIC_URL)
+
+  if (process.env.R2_ACCOUNT_ID && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY && process.env.R2_BUCKET) {
+    const key = `_comprobacion/${Date.now()}.txt`
+    const cuerpo = `comprobación ${new Date().toISOString()}`
+    try {
+      await put(key, Buffer.from(cuerpo), 'text/plain')
+      ok('subir a R2', `${process.env.R2_BUCKET}/${key}`)
+      if (process.env.R2_PUBLIC_URL) {
+        const url = publicUrl(key)
+        try {
+          const r = await fetch(url, { cache: 'no-store' })
+          const texto = r.ok ? await r.text() : ''
+          if (r.ok && texto === cuerpo) ok('leer por la URL pública', url)
+          else ko('leer por la URL pública', `${url} → HTTP ${r.status}. ¿Acceso público del bucket activado? ¿R2_PUBLIC_URL es la de ESTE bucket?`)
+        } catch (e) {
+          ko('leer por la URL pública', `${url} → ${e.cause?.message ?? e.message}`)
+        }
+      }
+      await removeMany([key])
+      ok('borrar de R2')
+    } catch (e) {
+      ko('subir a R2', `${e.name}: ${String(e.message).split('\n')[0]}. ¿Account ID, claves y nombre de bucket correctos? ¿El token tiene permiso Object Read & Write sobre ese bucket?`)
+    }
+  }
+
+  if (process.env.ADMIN_PASSWORD) {
+    try {
+      const r = await fetch(`${site}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ password: process.env.ADMIN_PASSWORD }),
+      })
+      if (!r.ok) ko('entrar en el panel', `${site} → HTTP ${r.status}. ¿ADMIN_PASSWORD es la misma que en Railway? ¿SITE apunta bien?`)
+      else {
+        ok('entrar en el panel', site)
+        const sesion = r.headers.get('set-cookie')?.split(';')[0] ?? ''
+        const me = await fetch(`${site}/api/admin/me`, { headers: { cookie: sesion } })
+        const { storage, bucket } = me.ok ? await me.json() : {}
+        if (storage === 'r2' && bucket === process.env.R2_BUCKET) ok('el servidor usa R2', `bucket ${bucket}`)
+        else if (storage === 'r2') ko('el servidor usa R2', `pero su bucket es "${bucket}" y aquí R2_BUCKET es "${process.env.R2_BUCKET}": las fotos irían a uno y el sitio miraría en otro`)
+        else if (storage) ko('el servidor usa R2', `está en modo "${storage}": faltan las variables de R2 en Railway (y un redeploy)`)
+        else ko('el servidor usa R2', `no he podido preguntárselo (HTTP ${me.status})`)
+      }
+    } catch (e) {
+      ko('entrar en el panel', `${site} → ${e.cause?.message ?? e.message}`)
+    }
+  }
+
+  console.log(mal ? `\n${mal} cosa${mal > 1 ? 's' : ''} por arreglar.` : '\nTodo en orden. Ya puedes publicar.')
+  process.exit(mal ? 1 : 0)
 }
 
 /* ── sesión ─────────────────────────────────────────────────────────── */
@@ -127,7 +278,7 @@ if (!dryRun) {
     body: JSON.stringify({ password: process.env.ADMIN_PASSWORD }),
   })
   if (!login.ok) {
-    console.error(`No he podido entrar en ${site}. ¿ADMIN_PASSWORD correcta? ¿SITE bien?`)
+    console.error(`No he podido entrar en ${site}. ¿ADMIN_PASSWORD correcta? ¿SITE bien? Prueba con --check.`)
     process.exit(1)
   }
   cookie = login.headers.get('set-cookie')?.split(';')[0] ?? ''
@@ -138,9 +289,7 @@ if (!dryRun) {
 async function publicar(name) {
   const t0 = performance.now()
   const buf = await readFile(path.join(dir, name))
-  const title = name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim()
-  // el id sale del contenido: la misma foto da el mismo id, y repetir no duplica
-  const id = `${slug(title) || 'foto'}-${createHash('sha1').update(buf).digest('hex').slice(0, 6)}`
+  if (esDng(buf)) return { name, skip: 'es un DNG con extensión .tif: revélalo y exporta a JPEG' }
 
   let info
   try {
@@ -149,8 +298,12 @@ async function publicar(name) {
     return { name, skip: 'no parece una imagen' }
   }
   const meta = await sharp(buf).metadata()
+  const xmp = xmpCampos(meta.xmp)
+  const title = (xmp.title || exifDescription(meta.exif) || name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim()).slice(0, 120)
+  // el id sale del contenido: la misma foto da el mismo id, y repetir no duplica
+  const id = `${slug(title) || 'foto'}-${createHash('sha1').update(buf).digest('hex').slice(0, 6)}`
   const year = yearForAll ?? exifYear(meta.exif) ?? String(new Date().getFullYear())
-  const place = placeForAll ?? ''
+  const place = (placeForAll ?? xmp.city ?? '').slice(0, 120)
 
   const lqip = await makeLqip(buf)
   const variants = []
@@ -162,7 +315,8 @@ async function publicar(name) {
     bytes += v.bytes
   })
 
-  if (dryRun) return { name, id, year, variants: variants.length, bytes, w: info.width, h: info.height, ms: performance.now() - t0 }
+  const hecho = { name, id, title, place, year, variants: variants.length, bytes, w: info.width, h: info.height, ms: performance.now() - t0 }
+  if (dryRun) return hecho
 
   const res = await fetch(`${site}/api/admin/photos/register`, {
     method: 'POST',
@@ -172,13 +326,22 @@ async function publicar(name) {
   if (res.status === 409) return { name, id, skip: 'ya estaba' }
   const out = await res.json().catch(() => ({}))
   if (!res.ok) return { name, id, error: out.error ?? `HTTP ${res.status}` }
-  return { name, id, year, variants: variants.length, bytes, w: info.width, h: info.height, ms: performance.now() - t0 }
+  return hecho
 }
 
 /* ── la carpeta, de N en N ─────────────────────────────────────────── */
 
-const files = (await readdir(dir)).filter((f) => /\.(jpe?g|png|tiff?|webp|avif)$/i.test(f)).sort()
+const todos = (await readdir(dir)).sort()
+const files = todos.filter((f) => IMAGEN.test(f))
+const raws = todos.filter((f) => RAW.test(f))
 console.log(`${files.length} imágenes en ${dir} · ${concurrency} a la vez${dryRun ? ' · SIMULACIÓN, no se sube nada' : ` · destino ${site}`}`)
+if (raws.length) {
+  console.log(
+    `  ${raws.length} RAW ignorado${raws.length > 1 ? 's' : ''} (${[...new Set(raws.map((f) => path.extname(f).toLowerCase()))].join(', ')}): ` +
+      `aquí no hay revelado. Exporta a JPEG desde Lightroom o Capture One y publica esa carpeta.`
+  )
+}
+if (!files.length) process.exit(raws.length ? 1 : 0)
 
 let hechas = 0
 let subidos = 0
@@ -200,7 +363,8 @@ await Promise.all(
       else if (r.error) console.log(`${pre} ${name} → ERROR ${r.error}`)
       else {
         subidos += r.bytes
-        console.log(`${pre} ${name} → ${r.id} · ${r.w}×${r.h} · ${r.year} · ${r.variants} variantes, ${kb(r.bytes)} · ${(r.ms / 1000).toFixed(1)}s`)
+        const donde = [r.place, r.year].filter(Boolean).join(', ')
+        console.log(`${pre} ${name} → «${r.title}»${donde ? ` (${donde})` : ''} · ${r.w}×${r.h} · ${r.variants} variantes, ${kb(r.bytes)} · ${(r.ms / 1000).toFixed(1)}s`)
       }
     }
   })
