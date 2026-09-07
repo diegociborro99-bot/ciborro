@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import onekoSprite from '../assets/oneko.gif'
+import { catZones } from '../lib/catZones'
 
 /**
  * Gato de escritorio — oneko.
@@ -191,8 +192,65 @@ export default function Cat({ enabled = true, scale = 1, speed = SPEED }) {
         ticks += 1
       }
 
-      const diffX = x - mouseX
-      const diffY = y - mouseY
+      /* Destino efectivo: el cursor, salvo que caiga en una zona vetada (el
+         tablero del juego, la rejilla de fotos). Entonces se empuja al punto
+         más cercano fuera de ella, con un margen, y el gato se queda en el
+         umbral. Una zona a pantalla completa —el visor— lo desvanece. */
+      let tx = mouseX
+      let ty = mouseY
+      let oculto = false
+      for (const z of catZones()) {
+        if (!z.isConnected) continue
+        let r = z.getBoundingClientRect()
+        // recortada al marco de su ventana: el contenido puede ser más alto
+        const win = z.closest('[role="dialog"]')
+        if (win) {
+          const w = win.getBoundingClientRect()
+          r = {
+            left: Math.max(r.left, w.left),
+            top: Math.max(r.top, w.top),
+            right: Math.min(r.right, w.right),
+            bottom: Math.min(r.bottom, w.bottom),
+          }
+          if (r.right <= r.left || r.bottom <= r.top) continue
+        }
+        if (r.right - r.left >= innerWidth * 0.9 && r.bottom - r.top >= innerHeight * 0.9) {
+          oculto = true
+          break
+        }
+        /* El margen tiene que superar STOP: el gato se planta a esa distancia
+           del destino, y si el destino queda más cerca del borde que eso,
+           acaba parado dentro de la zona por el lado por el que llega. */
+        const m = STOP + size * 0.6
+        if (tx > r.left - m && tx < r.right + m && ty > r.top - m && ty < r.bottom + m) {
+          /* El punto del borde más cercano AL GATO, no al cursor. Si fuera al
+             más cercano al cursor, un gato al otro lado cruzaría la zona por
+             dentro para llegar; así va derecho al lado que tiene más a mano y,
+             si la ventana se le abrió encima, sale por el camino más corto. */
+          const L = r.left - m
+          const Rr = r.right + m
+          const T = r.top - m
+          const B = r.bottom + m
+          let px = Math.min(Math.max(x, L), Rr)
+          let py = Math.min(Math.max(y, T), B)
+          if (px === x && py === y) {
+            const min = Math.min(x - L, Rr - x, y - T, B - y)
+            if (min === x - L) px = L
+            else if (min === Rr - x) px = Rr
+            else if (min === y - T) py = T
+            else py = B
+          }
+          tx = px
+          ty = py
+        }
+      }
+      tx = Math.min(Math.max(tx, size / 2), innerWidth - size / 2)
+      ty = Math.min(Math.max(ty, size / 2), innerHeight - size / 2)
+      el.style.opacity = oculto ? '0' : '1'
+      if (oculto) return
+
+      const diffX = x - tx
+      const diffY = y - ty
       const distance = Math.hypot(diffX, diffY)
 
       // Lo que le queda por andar. El paso se recorta a este mismo valor, así
@@ -311,6 +369,7 @@ export default function Cat({ enabled = true, scale = 1, speed = SPEED }) {
         // el sprite es blanco con contorno negro: una sombra corta lo despega
         // del fondo para que no se pierda sobre superficies claras
         filter: 'drop-shadow(0 1.5px 1.5px rgba(0,0,0,.4))',
+        transition: 'opacity .25s var(--ease)',
       }}
     />
   )

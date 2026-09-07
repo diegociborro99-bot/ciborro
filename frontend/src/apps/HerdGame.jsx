@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import onekoSprite from '../assets/oneko.gif'
+import { useCatZone } from '../lib/catZones'
 
 /**
  * Pastorea a los gatos.
@@ -133,6 +134,9 @@ export default function HerdGame() {
   const hold = useRef(0)
   const reloj = useRef(0)
   const statusRef = useRef('idle')
+
+  // que el gato del escritorio no se meta en el tablero: aquí ya hay gatos
+  useCatZone(boxRef)
 
   const [round, setRound] = useState(1)
   const [status, setStatus] = useState('idle') // idle | playing | won
