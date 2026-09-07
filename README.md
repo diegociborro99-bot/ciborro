@@ -50,7 +50,10 @@ Aquí no pasa por ningún lado:
 1. Panel de Cloudflare → **R2** → **Create bucket**. Llámalo, por ejemplo,
    `escritorio-fotos`.
 2. En el bucket → **Settings** → **Public access**: actívalo. Te da un dominio
-   `…r2.dev`, o conecta un subdominio tuyo (`fotos.tudominio.com`), que es mejor.
+   `…r2.dev`, que vale para empezar. Mejor es conectar un subdominio tuyo
+   (`fotos.tudominio.com`): va por la CDN con caché de verdad, pero sólo se
+   puede si el DNS del dominio está en Cloudflare (es gratis: se cambian los
+   nameservers en el registrador y se recrean allí los registros de Railway).
 3. **R2** → **Manage API tokens** → **Create API token**, permiso *Object Read &
    Write* sobre ese bucket. Apunta el **Access Key ID** y el **Secret**.
 4. El **Account ID** está en la barra lateral del panel de R2.
@@ -97,26 +100,50 @@ Si son muchas, o pesan, hazlo **desde tu ordenador** y no por el panel:
 
 ```bash
 cp .env.example backend/.env      # y pon dentro las claves de R2 y ADMIN_PASSWORD
+SITE=https://www.ciborro.es npm run photos:publish -- --check       # primero, sin fotos
 SITE=https://www.ciborro.es npm run photos:publish -- ~/Fotos/seleccion
 ```
 
-Ese script hace en tu máquina lo que el panel hace en el servidor —las mismas
+`--check` prueba cada pieza por separado antes de tocar una sola foto: sube y
+borra un archivo de prueba en el bucket, lo lee por la URL pública, entra en el
+panel con tu contraseña y pregunta al servidor si está en modo R2 y con el
+mismo bucket. Cada fallo dice qué variable mirar.
+
+El script hace en tu máquina lo que el panel hace en el servidor —las mismas
 18 variantes y el mismo LQIP, con la misma cadena de imagen—, sube los archivos
 directos a R2 y al servidor sólo le manda un JSON diciendo qué hay. Un 4K que
 en el contenedor tarda 5-10 s aquí tarda uno, no hay tope de tamaño y es
 imposible tumbar el servidor. Va de varias en varias (la mitad de tus núcleos),
-lee el año de la cámara del EXIF, y es idempotente: el id sale del contenido,
-así que relanzarlo sobre la misma carpeta salta las que ya están.
+y es idempotente: el id sale del contenido, así que relanzarlo sobre la misma
+carpeta salta las que ya están.
+
+Título, sitio y año salen de lo que ya pusiste en Lightroom: el título del XMP
+(o la descripción EXIF), la ciudad, y la fecha de la toma. Si no hay, el título
+sale del nombre del archivo y el resto se puede dar para toda la tanda:
 
 ```bash
 npm run photos:publish -- ~/Fotos/lisboa --place Lisboa --year 2025
 npm run photos:publish -- ~/Fotos/seleccion --dry-run     # procesa y cuenta, sin subir
 ```
 
-**Qué exportar.** JPEG a calidad 90, lado largo 4000 px, sRGB. Nada de RAW ni
-TIFF: el sitio nunca sirve más de 3840 px, y de la conversión a AVIF y WebP se
-encarga la cadena. Los originales de verdad se quedan en tu disco y tu copia; la
-web no los necesita.
+**Del RAW a la web.** Los DNG de la cámara no se publican: aquí no hay revelado,
+y un DNG abierto como TIFF daría la miniatura de 320 px que guarda dentro. El
+script los cuenta y los deja fuera. Revélalos donde siempre y exporta la
+selección a una carpeta con estos ajustes:
+
+| Ajuste | Valor |
+| --- | --- |
+| Formato | JPEG, sRGB |
+| Calidad | 90 |
+| Tamaño | lado largo 4000 px (el sitio nunca sirve más de 3840) |
+| Enfoque de salida | pantalla, estándar |
+| Metadatos | **todos** (o al menos con fecha y título; con «sólo copyright» se pierde el año) |
+
+Con eso cada foto pesa 3-6 MB en vez de 30 y el script tarda unos segundos por
+foto. Si prefieres exportar a tamaño completo también va: un original de 60 MP
+se reduce una sola vez y de ahí salen todas las variantes, unos 15-20 s por foto.
+Los originales de verdad se quedan en tu disco y tu copia; la web no los
+necesita.
 
 `backend/scripts/import-folder.js` sigue ahí para el otro camino (subir los
 originales y que convierta el servidor), pero para un lote es el lento.
