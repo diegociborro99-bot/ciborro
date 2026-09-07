@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Photo from '../components/Photo'
+import { useCatZone } from '../lib/catZones'
 import { useContent } from '../lib/content'
 import { usePointerDrag } from '../hooks/usePointerDrag'
 import { IconArrowLeft, IconArrowRight, IconClose } from '../icons/Icons'
@@ -14,6 +15,8 @@ export default function Gallery({ dense, openIndex, onOpenIndex }) {
   const { photos } = useContent()
   const boxRef = useRef(null)
   const [width, setWidth] = useState(600)
+  // las fotos no son sitio para que el gato se siente encima
+  useCatZone(boxRef)
   const [year, setYear] = useState('todo')
   const [place, setPlace] = useState('todo')
 
@@ -253,6 +256,9 @@ function Lightbox({ photos, ring, index, onIndex, onClose }) {
   const p = photos[index]
   const [zoom, setZoom] = useState(1)
   const boxRef = useRef(null)
+  // el visor ocupa la pantalla: el gato se desvanece mientras esté abierto
+  const portalRef = useRef(null)
+  useCatZone(portalRef)
   const [ancho, setAncho] = useState(0)
 
   /* Zoom «de marco»: crece la caja entera, no la imagen recortada dentro de una
@@ -393,6 +399,7 @@ function Lightbox({ photos, ring, index, onIndex, onClose }) {
       // el visor es negro pase lo que pase: se declara oscuro y sus tokens
       // dejan de bailar con el tema del escritorio
       data-theme="dark"
+      ref={portalRef}
       className="fade-in fixed inset-0 z-[9500] flex flex-col"
       style={{
         background: 'color-mix(in srgb, var(--bg-deep) 95%, transparent)',
