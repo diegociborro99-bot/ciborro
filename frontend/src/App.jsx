@@ -48,7 +48,7 @@ const APPS = {
   about:    { title: 'Sobre mí',             icon: IconAbout,    w: 560, h: 480, minW: 340, minH: 280 },
   projects: { title: 'Otras cosas',          icon: IconProjects, w: 600, h: 430, minW: 360, minH: 240 },
   music:    { title: 'Música',               icon: IconMusic,    w: 318, h: 522, minW: 300, minH: 500 },
-  game:     { title: 'Pastorea a los gatos', icon: IconGame,     w: 540, h: 450, minW: 380, minH: 320 },
+  game:     { title: 'Pastorea a los gatos', icon: IconGame,     w: 660, h: 540, minW: 420, minH: 360 },
   terminal: { title: 'Consola',              icon: IconTerminal, w: 560, h: 400, minW: 340, minH: 220 },
   notes:    { title: 'Léeme',                icon: IconNotes,    w: 520, h: 510, minW: 340, minH: 280 },
 }
